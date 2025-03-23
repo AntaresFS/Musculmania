@@ -1,2 +1,2 @@
 # Musculmania
-CRM Musculmanía con React y Python con Flask y SQLAlchemy
+CRM Musculmanía con React, Python (Flask) y SQLAlchemy
