@@ -22,7 +22,7 @@ class User(db.Model):
     diet_prefs = db.Column(db.String)
     allergies = db.Column(db.String)
     discount = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc))
     
     # Relaciones
     diets = db.relationship('Diet', backref='client', lazy=True)
@@ -154,6 +154,6 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     message = db.Column(db.String)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=datetime.timezone.utc)
     read = db.Column(db.Boolean, default=False)
     notificacion = db.Column(db.Integer, db.ForeignKey('notifications.id'))
