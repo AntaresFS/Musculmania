@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from app.models import db, User, Food, Meal, Diet, Routine, ProgressRecord, Notification, Message
+from api.models import db, User, Food, Meal, Diet, Routine, ProgressRecord, Notification, Message
 from datetime import timedelta
 
 # Crear blueprint
@@ -116,7 +116,6 @@ def modify_user():
 
     new_user_data = User(
         email=email,
-        password_hash=generate_password_hash(password),
         first_name=first_name,
         last_name=last_name,
         address=address,
