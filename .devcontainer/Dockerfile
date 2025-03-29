@@ -1,19 +1,21 @@
-# /PyMorfosis/Dockerfile
-FROM mcr.microsoft.com/devcontainers/javascript-node
+FROM mcr.microsoft.com/devcontainers/python:3.9
 
+# Instalar Node.js (si no lo trae ya) usando el script de instalación de Node
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y nodejs
 
-# Establece el directorio de trabajo
 WORKDIR /workspace
 
-# Copia los archivos de configuración de npm y luego instala las dependencias
-COPY package*.json ./
+# Instalar dependencias del backend
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --upgrade pip && pip install -r backend/requirements.txt
+
+# Instalar dependencias del frontend
+WORKDIR /workspace/frontend
+COPY frontend/package*.json ./
 RUN npm install
 
-# Expone el puerto en el que corre tu servidor (ajústalo si es necesario)
-EXPOSE 3000
+# Volver a la raíz para dejar el contenedor listo
+WORKDIR /workspace
 
-# Instala el cliente de PostgreSQL, Docker CLI y docker-compose
-RUN apt-get update && \
-   apt-get install -y postgresql-client && \
-   rm -rf /var/lib/apt/lists/*
-
+EXPOSE 3001
