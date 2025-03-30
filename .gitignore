@@ -1,5 +1,9 @@
 # Dependencias
-node_modules
+/node_modules
+/backend/venv
+
+# Archivos de producción
+build
 
 # Archivos de entorno
 .env
