@@ -3,10 +3,13 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
+
     volumes:
       - ../..:/workspaces:cached
+
     # Mantén el comando en 'sleep infinity' para que el contenedor no se cierre
     command: sleep infinity
+
     # Puedes utilizar network_mode si necesitas que se comunique con el servicio "db"
     network_mode: service:db
     depends_on:
@@ -14,7 +17,7 @@ services:
         condition: service_healthy
 
   db:
-    image: postgres:14
+    image: postgres:latest
     restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data
