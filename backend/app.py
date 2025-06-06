@@ -16,7 +16,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg2://postgres:example@db:5432/mydb"
 )
-app.config[SQLAlCHEMY_TRACK_MODIFICATIONS] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Inicializar la base de datos y migraciones
 db = SQLAlchemy(app)
