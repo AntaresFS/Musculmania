@@ -1,3 +1,5 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/postgres
 {
   "name": "Full Project Dev Container",
   "dockerComposeFile": ["docker-compose.yml"],
@@ -7,11 +9,29 @@
     "ghcr.io/devcontainers/features/github-cli:1": {
       "installDirectlyFromGitHubRelease": true,
       "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true,
+      "version": "lts"
     }
   },
-  "forwardPorts": [3001],
-  "onCreateCommand": "(cp backend/.env.example backend/.env || echo \".env creation failed\")",
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// This can be used to network with other containers or the host.
+  "forwardPorts": [3000, 3001],
+
+  
+  // Runs when the dev container is created. Sets up environment variables, Python dependencies, and initializes the database.
+  "onCreateCommand": "(cp .env.example .env || echo \".env creation failed\"); (pipenv install || echo \"pipenv install failed\"); (bash database.sh || echo \"database.sh failed\");",
+  
+  // Runs after the container is created. Installs Python dependencies for the backend and Node.js dependencies for the frontend.
   "postCreateCommand": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install",
+  
+  // This section is reserved for adding any extra configuration options needed for the dev container setup.
+  // You can specify additional settings, extensions, or features here to customize your development environment.
   "customizations": {
     "vscode": {
       "settings": {
