@@ -6,10 +6,12 @@ from flask_migrate import Migrate
 from dotenv import load_dotenv
 
 # Cargar variables de entorno desde un archivo .env
-load_dotenv
+load_dotenv(override=True)
 
 app = Flask(__name__)
 CORS(app)  # si vas a consumir desde otro dominio (React en otro puerto)
+
+print("DATABASE_URL:", os.getenv("DATABASE_URL"))
 
 # Configuración de SQLAlchemy usando la variable de entorno DATABASE_URL
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
