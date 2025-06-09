@@ -5,8 +5,8 @@ services:
   # Servicio de la aplicación (entorno de desarrollo)
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: ./.devcontainer/Dockerfile
     
     # Monta todo el proyecto dentro del contenedor
     volumes:
