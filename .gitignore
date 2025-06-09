@@ -1,0 +1,21 @@
+# .gitignore
+
+# Entornos virtuales de Python
+/backend/venv/
+__pycache__/
+*.pyc
+
+# Variables de entorno
+backend/.env
+
+# Dependencias de Node
+/frontend/node_modules/
+/frontend/dist/
+npm-debug.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de VSCode
+.vscode/

@@ -1,0 +1,67 @@
+body {
+  font-family: 'Arial', sans-serif; /* Puedes cambiar a otra fuente sobria */
+  color: #333; /* Gris oscuro para el texto principal */
+  background-color: #f8f9fa; /* Blanco roto o gris muy claro */
+}
+
+/* Opcional: Eliminar márgenes por defecto del body */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Clases de Bootstrap para colores */
+.text-dark {
+    color: #212529 !important; /* Negro de Bootstrap */
+}
+
+.text-secondary {
+    color: #6c757d !important; /* Gris de Bootstrap */
+}
+
+.bg-dark {
+    background-color: #343a40 !important; /* Gris muy oscuro de Bootstrap */
+}
+
+.bg-light {
+    background-color: #f8f9fa !important; /* Blanco/gris claro de Bootstrap */
+}
+
+.btn-dark {
+    background-color: #343a40 !important;
+    border-color: #343a40 !important;
+    color: #fff !important;
+}
+
+.btn-dark:hover {
+    background-color: #212529 !important;
+    border-color: #212529 !important;
+}
+
+.btn-outline-light {
+    border-color: #f8f9fa !important;
+    color: #f8f9fa !important;
+}
+
+.btn-outline-light:hover {
+    background-color: #f8f9fa !important;
+    color: #343a40 !important;
+}
+
+.form-control, .form-select {
+    border-color: #ced4da;
+    color: #343a40;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #6c757d;
+    box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+}
+
+.card {
+    border-radius: 0.5rem; /* Bordes ligeramente redondeados */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700; /* Negrita para títulos */
+}
