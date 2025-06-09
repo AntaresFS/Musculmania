@@ -7,7 +7,7 @@ const AppFooter = () => {
       <Container>
         <Row>
           <Col md={4} className="mb-3 mb-md-0">
-            <h5>[Tu Tienda] Suplementos</h5>
+            <h5>Musculmania</h5>
             <p className="text-secondary">
               Tu aliado para un estilo de vida saludable y tus metas de fitness.
             </p>
@@ -44,7 +44,7 @@ const AppFooter = () => {
         <hr className="bg-secondary" />
         <Row>
           <Col className="text-center text-secondary">
-            <p>&copy; {new Date().getFullYear()} [Tu Tienda] Suplementos. Todos los derechos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} Musculmania. Todos los derechos reservados.</p>
           </Col>
         </Row>
       </Container>
