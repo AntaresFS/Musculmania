@@ -1,0 +1,40 @@
+# .devcontainer/docker-compose.yml
+version: '3.8'
+
+services:
+  # Servicio de la aplicación (entorno de desarrollo)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Monta todo el proyecto dentro del contenedor
+    volumes:
+      - ..:/workspace:cached
+
+    # Variables de entorno para que Flask se conecte a la BD
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+
+    # Mantiene el contenedor corriendo
+    command: sleep infinity
+
+    # El servicio de la app depende del servicio de la BD
+    depends_on:
+      - db
+
+  # Servicio de la base de datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+    # Credenciales para la base de datos
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mydatabase
+
+volumes:
+  postgres_data:
