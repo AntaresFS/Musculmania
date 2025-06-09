@@ -1,5 +1,5 @@
 .hero-section {
-  background: url('frontend/public/hero-background.png') no-repeat center center; /* Reemplaza con tu imagen de fondo */
+  background: url('/hero-background.png') no-repeat center center; /* Reemplaza con tu imagen de fondo */
   background-size: cover;
   min-height: 80vh; /* Ajusta la altura según tus preferencias */
   position: relative;
