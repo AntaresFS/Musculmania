@@ -7,7 +7,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends nodejs npm postgresql-client
 
 # Copia los requisitos del backend para poder instalarlos después
-COPY ../backend/requirements.txt /tmp/requirements.txt
+COPY backend/requirements.txt /tmp/requirements.txt
 
 # Limpia la caché de apt
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
