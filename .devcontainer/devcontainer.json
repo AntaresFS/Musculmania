@@ -1,0 +1,33 @@
+// .devcontainer/devcontainer.json
+{
+  "name": "Python & Node.js con PostgreSQL",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Puertos a reenviar. 5173 para Vite, 5000 para Flask
+  "forwardPorts": [5173, 5000, 5432],
+  "portsAttributes": {
+    "5173": { "label": "Frontend (Vite)" },
+    "5000": { "label": "Backend (Flask)" },
+    "5432": { "label": "PostgreSQL" }
+  },
+
+  // Comando a ejecutar después de crear el contenedor
+  "postCreateCommand": "pip install -r /tmp/requirements.txt && cd frontend && npm install",
+  
+  // Extensiones de VS Code recomendadas
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg"
+      ]
+    }
+  }
+}
