@@ -1,37 +1,21 @@
-// frontend/src/App.jsx
-import { useState, useEffect } from 'react';
-import './App.css';
+import React from 'react';
+import AppNavbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
+import FeaturesSection from './components/FeaturesSection';
+import TestimonialsSection from './components/TestimonialsSection';
+import CTASection from './components/CTASection';
+import AppFooter from './components/Footer';
+import './App.css'; // Para estilos globales o de reinicio
 
 function App() {
-  const [projects, setProjects] = useState([]);
-  const [message, setMessage] = useState('Cargando...');
-
-  useEffect(() => {
-    // La URL es relativa gracias al proxy de Vite
-    fetch('/api/projects')
-      .then(response => response.json())
-      .then(data => {
-        setProjects(data);
-        setMessage('');
-      })
-      .catch(error => {
-        console.error("Error al obtener los proyectos:", error);
-        setMessage('Error al conectar con el backend. ¿Está funcionando?');
-      });
-  }, []);
-
   return (
     <div className="App">
-      <h1>Boilerplate Full Stack</h1>
-      <h2>Proyectos desde el Backend:</h2>
-      {message && <p>{message}</p>}
-      <ul>
-        {projects.map(project => (
-          <li key={project.id}>
-            <strong>{project.name}:</strong> {project.description}
-          </li>
-        ))}
-      </ul>
+      <AppNavbar />
+      <HeroSection />
+      <FeaturesSection />
+      <TestimonialsSection />
+      <CTASection />
+      <AppFooter />
     </div>
   );
 }
