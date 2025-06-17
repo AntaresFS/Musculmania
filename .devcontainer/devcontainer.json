@@ -1,21 +1,26 @@
-// .devcontainer/devcontainer.json
 {
   "name": "Python & Node.js con PostgreSQL",
   "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspace",
+  "service": "app", // El servicio de docker-compose que representa tu entorno de desarrollo
+  "workspaceFolder": "/workspace", // Directorio raíz donde se montará tu repositorio
 
   // Puertos a reenviar. 5173 para Vite, 5000 para Flask
   "forwardPorts": [5173, 5000, 5432],
   "portsAttributes": {
-    "5173": { "label": "Frontend (Vite)" },
-    "5000": { "label": "Backend (Flask)" },
-    "5432": { "label": "PostgreSQL" }
+    "5173": { "label": "Frontend (Vite)", "onAutoForward": "notify" },
+    "5000": { "label": "Backend (Flask)", "onAutoForward": "notify" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "ignore" } // PostgreSQL suele ser un servicio interno, no necesitas notificaciones
   },
 
   // Comando a ejecutar después de crear el contenedor
-  "postCreateCommand": "pip install -r /tmp/requirements.txt && cd frontend && npm install",
-  
+  // Esto se ejecuta en el workDirectory (que es /workspace por defecto)
+  "postCreateCommand": [
+    "pip install -r backend/requirements.txt", // Instala dependencias Python desde el backend
+    "cd frontend && npm install" // Navega a frontend e instala dependencias Node.js
+  ],
+  // Opcional: Para ejecutar después de que el Codespace esté completamente listo (ej. reconstrucciones)
+  // "postStartCommand": "",
+
   // Extensiones de VS Code recomendadas
   "customizations": {
     "vscode": {
@@ -29,5 +34,11 @@
         "mtxr.sqltools-driver-pg"
       ]
     }
+  },
+
+  // Opcional: Variables de entorno específicas para el devcontainer
+  "remoteEnv": {
+    // "FLASK_APP": "backend/app.py", // Si tu backend es Flask, podría ser útil
+    // "FLASK_ENV": "development"
   }
 }

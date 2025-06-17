@@ -12,9 +12,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 # Instalamos Node.js (v20), npm y el cliente de PostgreSQL
 RUN apt-get -y install --no-install-recommends nodejs postgresql-client
 
-# Copia los requisitos del backend para poder instalarlos después
-COPY backend/requirements.txt /tmp/requirements.txt
-
 # Limpia la caché de apt
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
