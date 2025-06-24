@@ -3,7 +3,7 @@ import os
 from flask import Flask, jsonify, request # Importa 'request' para acceder a los datos de la petición
 from flask_cors import CORS
 from dotenv import load_dotenv
-from models import db, Project, User # Importa el modelo User
+from .models import db, Project, User # Importa el modelo User
 from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
 from flask_migrate import Migrate # Importa Flask-Migrate 
 

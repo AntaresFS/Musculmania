@@ -21,7 +21,7 @@
   // Comando a ejecutar después de crear el contenedor
   // Esto se ejecuta en el workDirectory (que es /workspace por defecto)
   "postCreateCommand": [
-    "./install_all.sh" // Script para instalar dependencias de Python y Node.js
+    "./install_all.sh" // Ejecuta el script para instalar dependencias
   ],
   // Opcional: Para ejecutar después de que el Codespace esté completamente listo (ej. reconstrucciones)
   // "postStartCommand": "",
