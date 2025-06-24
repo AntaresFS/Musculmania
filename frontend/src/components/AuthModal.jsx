@@ -1,68 +1,102 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form, Nav, Alert } from 'react-bootstrap'; // Importa Alert
+import { Modal, Button, Form, Nav, Alert } from 'react-bootstrap';
 
 const AuthModal = ({ show, handleClose }) => {
   const [isRegistering, setIsRegistering] = useState(false);
-  
-  // Estados para las contraseñas y sus errores
+
+  // --- Estados para los campos del formulario de registro ---
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [gender, setGender] = useState(''); // 'male' o 'female'
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [level, setLevel] = useState('');
+  const [allergies, setAllergies] = useState('');
+  const [dietPrefs, setDietPrefs] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordMatchError, setPasswordMatchError] = useState('');
+  // --- Fin de estados para los campos ---
 
-  // Estado para el mensaje de error general del formulario de registro
+  const [passwordMatchError, setPasswordMatchError] = useState('');
   const [formError, setFormError] = useState('');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false); // Nuevo estado para mensaje de éxito
 
   // Función para manejar el envío del formulario de inicio de sesión
   const handleLoginSubmit = (event) => {
     event.preventDefault();
-    // Lógica para enviar los datos de login al backend
     console.log('Login Form Submitted');
-    // Después de un login exitoso, podrías cerrar el modal: handleClose();
+    // Lógica para enviar los datos de login al backend
   };
 
   // Función para manejar el envío del formulario de registro
-  const handleRegisterSubmit = (event) => {
-    event.preventDefault(); // Evita el recargado de la página
+  const handleRegisterSubmit = async (event) => { // Marcamos como async para await el fetch
+    event.preventDefault();
 
-    setFormError(''); // Limpia cualquier error anterior
+    setFormError(''); // Limpia cualquier error anterior del formulario
     setPasswordMatchError(''); // Limpia el error de contraseña anterior
+    setRegistrationSuccess(false); // Limpia el mensaje de éxito
 
     // 1. Validar que las contraseñas coincidan
     if (password !== confirmPassword) {
       setPasswordMatchError('Las contraseñas no coinciden.');
       setFormError('Por favor, corrige los errores del formulario.');
-      return; // Detener el envío si las contraseñas no coinciden
-    } else {
-      setPasswordMatchError('');
+      return;
     }
 
-    // 2. Validar campos obligatorios (nativa de HTML5 con `required`)
-    // Si usas 'required' en Form.Control, el navegador ya hace una validación básica.
-    // Sin embargo, podemos añadir una verificación explícita para un mensaje general.
+    // 2. Validar campos obligatorios (controlado por `required` y `checkValidity`)
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
-      event.stopPropagation(); // Previene la propagación del evento
+      event.stopPropagation();
       setFormError('Por favor, rellena todos los campos obligatorios.');
-      // Bootstrap añadirá clases de validación (is-invalid) si el formulario está configurado para eso.
-    } else {
-      // Si todo es válido, procede con el envío al backend
-      console.log('Register Form Submitted:', {
-        // Aquí recopilarías todos los valores de los campos
-        // Idealmente, usarías estados para cada campo de input para acceder a sus valores
-        // Por ahora, solo un placeholder:
-        name: form.formRegisterFirstName.value,
-        lastName: form.formRegisterLastName.value,
-        gender: form.gender.value, // Los radios comparten el mismo name
-        email: form.formRegisterEmail.value,
-        phone: form.formRegisterPhone.value,
-        address: form.formRegisterAddress.value,
-        level: form.formRegisterLevel.value,
-        allergies: form.formRegisterAllergies.value,
-        dietPrefs: form.formRegisterDietPrefs.value,
-        password: password, // Usamos el estado de la contraseña
-      });
-      // Después de un registro exitoso, podrías cerrar el modal o redirigir: handleClose();
+      return;
     }
+
+    // Si todo es válido, procede con el envío al backend
+    const userData = {
+      firstName,
+      lastName,
+      gender,
+      email,
+      phone,
+      address,
+      level,
+      allergies,
+      dietPrefs,
+      password, // Es importante no enviar confirmPassword al backend
+    };
+
+    console.log('Datos a enviar al backend:', userData);
+
+    // --- Lógica de envío al Backend ---
+    try {
+      const response = await fetch('http://localhost:5000/api/register', { // ¡Asegúrate que la URL sea correcta!
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Registro exitoso:', data);
+        setRegistrationSuccess(true);
+        // Opcional: Cerrar el modal después de un registro exitoso o redirigir
+        // setTimeout(() => {
+        //   handleClose();
+        //   setIsRegistering(false); // Volver al login view si se cierra
+        // }, 2000);
+      } else {
+        console.error('Error en el registro:', data);
+        setFormError(data.message || 'Error al registrar el usuario. Inténtalo de nuevo.');
+      }
+    } catch (error) {
+      console.error('Error de red o del servidor:', error);
+      setFormError('No se pudo conectar con el servidor. Inténtalo más tarde.');
+    }
+    // --- Fin lógica de envío al Backend ---
   };
 
   return (
@@ -100,17 +134,29 @@ const AuthModal = ({ show, handleClose }) => {
             </div>
           </Form>
         ) : ( // Contenido del formulario de registro
-          <Form noValidate onSubmit={handleRegisterSubmit}> {/* Añade noValidate para controlar la validación */}
+          <Form noValidate onSubmit={handleRegisterSubmit}>
             {/* Campo de Nombre */}
             <Form.Group className="mb-3" controlId="formRegisterFirstName">
               <Form.Label>Nombre</Form.Label>
-              <Form.Control type="text" placeholder="Introduce tu nombre" required />
+              <Form.Control
+                type="text"
+                placeholder="Introduce tu nombre"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
             </Form.Group>
 
             {/* Campo de Apellidos */}
             <Form.Group className="mb-3" controlId="formRegisterLastName">
               <Form.Label>Apellidos</Form.Label>
-              <Form.Control type="text" placeholder="Introduce tus apellidos" required />
+              <Form.Control
+                type="text"
+                placeholder="Introduce tus apellidos"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
             </Form.Group>
 
             {/* Campo de Sexo (Radio Buttons) */}
@@ -124,6 +170,8 @@ const AuthModal = ({ show, handleClose }) => {
                   name="gender"
                   id="genderMale"
                   value="male"
+                  checked={gender === 'male'}
+                  onChange={(e) => setGender(e.target.value)}
                   required
                 />
                 <Form.Check
@@ -133,6 +181,8 @@ const AuthModal = ({ show, handleClose }) => {
                   name="gender"
                   id="genderFemale"
                   value="female"
+                  checked={gender === 'female'}
+                  onChange={(e) => setGender(e.target.value)}
                   required
                 />
               </div>
@@ -140,23 +190,44 @@ const AuthModal = ({ show, handleClose }) => {
 
             <Form.Group className="mb-3" controlId="formRegisterEmail">
               <Form.Label>Correo electrónico (para iniciar sesión)</Form.Label>
-              <Form.Control type="email" placeholder="Introduce tu correo electrónico" required />
+              <Form.Control
+                type="email"
+                placeholder="Introduce tu correo electrónico"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="formRegisterPhone">
               <Form.Label>Número de Teléfono</Form.Label>
-              <Form.Control type="tel" placeholder="Ej: +34 600123456" />
+              <Form.Control
+                type="tel"
+                placeholder="Ej: +34 600123456"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
             </Form.Group>
 
             {/* Campo de Dirección simple */}
             <Form.Group className="mb-3" controlId="formRegisterAddress">
               <Form.Label>Dirección</Form.Label>
-              <Form.Control type="text" placeholder="Tu dirección completa (Calle, Nº, CP, Localidad)" required /> {/* Ahora es obligatorio */}
+              <Form.Control
+                type="text"
+                placeholder="Tu dirección completa (Calle, Nº, CP, Localidad)"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                required
+              />
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="formRegisterLevel">
               <Form.Label>Nivel del Cliente</Form.Label>
-              <Form.Select required>
+              <Form.Select
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                required
+              >
                 <option value="">Selecciona tu nivel</option>
                 <option value="principiante">Principiante</option>
                 <option value="intermedio">Intermedio</option>
@@ -166,45 +237,54 @@ const AuthModal = ({ show, handleClose }) => {
 
             <Form.Group className="mb-3" controlId="formRegisterAllergies">
               <Form.Label>Alergias alimenticias e intolerancias</Form.Label>
-              <Form.Control as="textarea" rows={3} placeholder="Ej: Gluten, lactosa, frutos secos..." />
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Ej: Gluten, lactosa, frutos secos..."
+                value={allergies}
+                onChange={(e) => setAllergies(e.target.value)}
+              />
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="formRegisterDietPrefs">
               <Form.Label>Preferencias en la dieta</Form.Label>
-              <Form.Control as="textarea" rows={3} placeholder="Ej: Vegana, vegetariana, sin carnes rojas..." />
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Ej: Vegana, vegetariana, sin carnes rojas..."
+                value={dietPrefs}
+                onChange={(e) => setDietPrefs(e.target.value)}
+              />
             </Form.Group>
 
             {/* Campo de Contraseña */}
             <Form.Group className="mb-3" controlId="formRegisterPassword">
               <Form.Label>Contraseña</Form.Label>
-              <Form.Control 
-                type="password" 
-                placeholder="Crea tu contraseña" 
+              <Form.Control
+                type="password"
+                placeholder="Crea tu contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required 
+                required
               />
             </Form.Group>
 
             {/* Campo de Confirmar Contraseña */}
             <Form.Group className="mb-3" controlId="formRegisterConfirmPassword">
               <Form.Label>Confirmar Contraseña</Form.Label>
-              <Form.Control 
-                type="password" 
-                placeholder="Confirma tu contraseña" 
+              <Form.Control
+                type="password"
+                placeholder="Confirma tu contraseña"
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword(e.target.value);
-                  // Limpiar el error de coincidencia al escribir
                   if (passwordMatchError && password === e.target.value) {
                     setPasswordMatchError('');
                   }
                 }}
-                required 
-                // Añade la clase 'is-invalid' si hay un error de coincidencia
+                required
                 className={passwordMatchError ? 'is-invalid' : ''}
               />
-              {/* Mensaje de error si las contraseñas no coinciden */}
               {passwordMatchError && (
                 <Form.Text className="text-danger">
                   {passwordMatchError}
@@ -216,6 +296,13 @@ const AuthModal = ({ show, handleClose }) => {
             {formError && (
               <Alert variant="danger" className="mt-3">
                 {formError}
+              </Alert>
+            )}
+
+            {/* Mensaje de éxito de registro */}
+            {registrationSuccess && (
+              <Alert variant="success" className="mt-3">
+                ¡Registro exitoso! Ya puedes iniciar sesión.
               </Alert>
             )}
 
