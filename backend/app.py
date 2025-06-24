@@ -5,6 +5,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from models import db, Project, User # Importa el modelo User
 from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
+from flask_migrate import Migrate # Importa Flask-Migrate 
 
 load_dotenv() # Carga las variables de entorno desde .env
 
@@ -13,21 +14,14 @@ CORS(app) # Habilita CORS para todas las rutas
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') # Usa una clave secreta para la sesión y CSRF
 # Opcional: Para el manejo de sesiones de usuario si implementas login/logout más avanzado
 # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') # Considera moverla a .env
 
 db.init_app(app)
 
-# --- Creación de tablas y datos de prueba ---
-# ¡IMPORTANTE! Para una app en producción, usa Flask-Migrate (Alembic) para gestionar migraciones de base de datos.
-# db.create_all() borra y recrea tablas si ya existen, perdiendo datos.
-with app.app_context():
-    db.create_all()
-    # Añade un proyecto de ejemplo si no existe
-    if not Project.query.first():
-        sample_project = Project(name="Mi Primer Proyecto", description="Este es un proyecto de prueba desde el backend.")
-        db.session.add(sample_project)
-        db.session.commit()
+migrate = Migrate(app, db) # Inicializa Flask-Migrate para manejar migraciones de base de datos
+
 
 # --- Rutas de la API ---
 @app.route('/')

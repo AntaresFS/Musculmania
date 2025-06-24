@@ -4,6 +4,18 @@ from werkzeug.security import generate_password_hash, check_password_hash # Impo
 
 db = SQLAlchemy()
 
+class Project(db.Model): # <<< Project Class must be defined correctly <<<
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description
+        }
+
 # --- Nuevo modelo de Usuario (User) ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)

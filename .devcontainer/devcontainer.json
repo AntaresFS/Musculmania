@@ -12,11 +12,16 @@
     "5432": { "label": "PostgreSQL", "onAutoForward": "ignore" } // PostgreSQL suele ser un servicio interno, no necesitas notificaciones
   },
 
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:1": {
+      "version": "latest"
+    }
+  },
+
   // Comando a ejecutar después de crear el contenedor
   // Esto se ejecuta en el workDirectory (que es /workspace por defecto)
   "postCreateCommand": [
-    "pip install -r backend/requirements.txt", // Instala dependencias Python desde el backend
-    "cd frontend && npm install" // Navega a frontend e instala dependencias Node.js
+    "./install_all.sh" // Script para instalar dependencias de Python y Node.js
   ],
   // Opcional: Para ejecutar después de que el Codespace esté completamente listo (ej. reconstrucciones)
   // "postStartCommand": "",
@@ -38,7 +43,7 @@
 
   // Opcional: Variables de entorno específicas para el devcontainer
   "remoteEnv": {
-    // "FLASK_APP": "backend/app.py", // Si tu backend es Flask, podría ser útil
+    "FLASK_APP": "backend.app" // Si tu backend es Flask, podría ser útil
     // "FLASK_ENV": "development"
   }
 }
