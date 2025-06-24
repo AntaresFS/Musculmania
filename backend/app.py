@@ -1,9 +1,10 @@
 # backend/app.py
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request # Importa 'request' para acceder a los datos de la petición
 from flask_cors import CORS
 from dotenv import load_dotenv
-from models import db, Project
+from models import db, Project, User # Importa el modelo User
+from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
 
 load_dotenv() # Carga las variables de entorno desde .env
 
@@ -12,11 +13,14 @@ CORS(app) # Habilita CORS para todas las rutas
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Opcional: Para el manejo de sesiones de usuario si implementas login/logout más avanzado
+# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') # Considera moverla a .env
 
 db.init_app(app)
 
 # --- Creación de tablas y datos de prueba ---
-# En una app real, usarías Flask-Migrate
+# ¡IMPORTANTE! Para una app en producción, usa Flask-Migrate (Alembic) para gestionar migraciones de base de datos.
+# db.create_all() borra y recrea tablas si ya existen, perdiendo datos.
 with app.app_context():
     db.create_all()
     # Añade un proyecto de ejemplo si no existe
@@ -35,5 +39,91 @@ def get_projects():
     projects = Project.query.all()
     return jsonify([project.to_dict() for project in projects])
 
+
+### **Endpoint de Registro de Usuario**
+@app.route('/api/register', methods=['POST'])
+def register_user():
+    data = request.get_json()
+
+    # Validar que los datos requeridos estén presentes y no sean vacíos
+    required_fields = ['firstName', 'lastName', 'gender', 'email', 'address', 'level', 'password']
+    for field in required_fields:
+        if field not in data or not data[field]:
+            # Devuelve un 400 Bad Request si falta algún campo obligatorio
+            return jsonify({'message': f'Falta el campo obligatorio o está vacío: {field}'}), 400
+            
+    email = data['email'] # Accede directamente, ya validado que existe
+
+    # Comprobar si el email ya existe en la base de datos
+    if User.query.filter_by(email=email).first():
+        # Devuelve un 409 Conflict si el email ya está registrado
+        return jsonify({'message': 'El correo electrónico ya está registrado.'}), 409
+
+    try:
+        # Crear una nueva instancia de User con los datos recibidos
+        new_user = User(
+            first_name=data['firstName'],
+            last_name=data['lastName'],
+            gender=data['gender'],
+            email=email,
+            phone=data.get('phone'), # Usar .get() para campos opcionales
+            address=data['address'],
+            level=data['level'],
+            allergies=data.get('allergies'),
+            diet_preferences=data.get('dietPrefs')
+        )
+
+        # Hashear y establecer la contraseña
+        new_user.set_password(data['password'])
+
+        db.session.add(new_user) # Añadir el nuevo usuario a la sesión de la BD
+        db.session.commit()     # Confirmar los cambios en la BD
+
+        # Devuelve una respuesta exitosa con el usuario creado (sin la contraseña)
+        return jsonify({
+            'message': 'Usuario registrado exitosamente',
+            'user': new_user.to_dict() # Utiliza el método to_dict del modelo
+        }), 201 # 201 Created
+
+    except IntegrityError:
+        # Esto captura errores de unicidad que no fueron previstos por la comprobación inicial
+        db.session.rollback() # Deshacer la transacción si hay un error
+        return jsonify({'message': 'Error de base de datos: El correo electrónico ya existe.'}), 409
+    except Exception as e:
+        # Captura cualquier otro error inesperado del servidor
+        db.session.rollback()
+        return jsonify({'message': f'Error interno del servidor: {str(e)}'}), 500
+
+
+### **Endpoint de Login de Usuario**
+@app.route('/api/login', methods=['POST'])
+def login_user():
+    data = request.get_json()
+
+    email = data.get('email')
+    password = data.get('password')
+
+    # Validar que se hayan proporcionado email y contraseña
+    if not email or not password:
+        return jsonify({'message': 'Se requiere correo electrónico y contraseña.'}), 400
+
+    # Buscar al usuario por email
+    user = User.query.filter_by(email=email).first()
+
+    # Si el usuario no existe o la contraseña es incorrecta
+    if user is None or not user.check_password(password):
+        # Devuelve un 401 Unauthorized para credenciales inválidas
+        return jsonify({'message': 'Correo electrónico o contraseña incorrectos.'}), 401
+
+    # Si las credenciales son correctas
+    # En una aplicación real, aquí generarías y devolverías un token JWT
+    # para mantener la sesión del usuario. Por ahora, solo confirmamos el login.
+    return jsonify({
+        'message': 'Inicio de sesión exitoso',
+        'user': user.to_dict() # Devuelve los datos del usuario (sin la contraseña)
+    }), 200 # 200 OK
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    # Asegúrate de que la base de datos se haya inicializado y las tablas existan
+    # Esto ya lo tienes en el bloque `with app.app_context(): db.create_all()`
+    app.run(host='0.0.0.0', port=5000, debug=os.environ.get('FLASK_DEBUG') == '1')
