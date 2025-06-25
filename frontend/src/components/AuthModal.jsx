@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Nav, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios'; // Importamos Axios
-import { useAuth } from '../context/AuthContext'; // Importamos el contexto de autenticación
+import { useAuth } from '../context/AuthContext.jsx'; // Importamos el contexto de autenticación
 
 // Definimos la URL de la API desde las variables de entorno 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
