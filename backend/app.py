@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from .models import db, Project, User # Importa el modelo User
 from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
 from flask_migrate import Migrate # Importa Flask-Migrate 
+from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
 
 load_dotenv() # Carga las variables de entorno desde .env
 
@@ -15,8 +16,10 @@ CORS(app) # Habilita CORS para todas las rutas
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') # Usa una clave secreta para la sesión y CSRF
-# Opcional: Para el manejo de sesiones de usuario si implementas login/logout más avanzado
-# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') # Considera moverla a .env
+
+# Configuración de JWT
+app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY', 'super-secret-jwt-key') # ¡CAMBIA ESTO EN PRODUCCIÓN!
+jwt = JWTManager(app) # <-- Inicializa JWTManager
 
 db.init_app(app)
 
@@ -110,12 +113,27 @@ def login_user():
         return jsonify({'message': 'Correo electrónico o contraseña incorrectos.'}), 401
 
     # Si las credenciales son correctas
-    # En una aplicación real, aquí generarías y devolverías un token JWT
-    # para mantener la sesión del usuario. Por ahora, solo confirmamos el login.
+    # Crear un token de acceso para el usuario autenticado
+    access_token = create_access_token(identity={'id': user.id})
+    
+    # Devuelve el token y los datos del usuario (sin la contraseña)
     return jsonify({
         'message': 'Inicio de sesión exitoso',
+        'access_token': access_token, # Enviamos el token JWT al frontend
         'user': user.to_dict() # Devuelve los datos del usuario (sin la contraseña)
     }), 200 # 200 OK
+
+# --- Ejemplo de ruta protegida ---
+@app.route('/api/protected', methods=['GET'])
+@jwt_required() # <-- Decorador que protege la ruta
+def protected_route():
+    # Accede a la identidad del usuario actual con get_jwt_identity
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id) # Buscar el usuario por ID
+
+    if user:
+        return jsonify(logged_in_as=user.email, message="¡Acceso concedido a ruta protegida!"), 200
+    return jsonify(message="Usuario no encontrado."), 404
 
 if __name__ == '__main__':
     # Asegúrate de que la base de datos se haya inicializado y las tablas existan
