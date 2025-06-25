@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Nav, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios'; // Importamos Axios
+import { useAuth } from '../context/AuthContext'; // Importamos el contexto de autenticación
 
 // Definimos la URL de la API desde las variables de entorno 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -26,6 +27,7 @@ const AuthModal = ({ show, handleClose }) => {
     const [formError, setFormError] = useState('');
     const [formMessage, setFormMessage] = useState(''); // Mensaje general para éxito o error no validado
     const [isLoading, setIsLoading] = useState(false); // Nuevo estado para controlar el loading
+    const { login: authLogin } = useAuth (); // Importamos la función de login del contexto de autenticación
 
     // Función para limpiar todos los estados del formulario
     const resetFormStates = () => {
@@ -66,9 +68,9 @@ const AuthModal = ({ show, handleClose }) => {
             if (response.status === 200) { // Axios facilita el acceso directo al status
                 setFormMessage(response.data.message || '¡Inicio de sesión exitoso!');
                 console.log('Login exitoso:', response.data.user);
-                // Guardar el token JWT y los datos del usuario en localStorage
-                localStorage.setItem('jwt_token', response.data.access_token);
-                localStorage.setItem('user_data', JSON.stringify(response.data.user));
+
+                // *** Usar el contexto de autenticación para guardar el usuario y token ***
+                authLogin(response.data.token, response.data.user); // Guardamos el token y los datos
 
                 // Opcional: Cerrar el modal o redirigir
                 setTimeout(() => {
