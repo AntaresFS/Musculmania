@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { useState, useEffect, useContext } from 'react';
 import AuthContext from './authContext'; // Importamos el contexto desde el nuevo archivo
 
