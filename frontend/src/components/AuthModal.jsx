@@ -147,40 +147,49 @@ const AuthModal = ({ show, handleClose }) => {
 
             if (response.status === 201) { // Axios facilita el acceso directo al status
                 setFormMessage(response.data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
-                // Inicio de sesión automático después del registro
-                // Primero logueamos al usuario con los datos de registro
-                const loginData = await axios.post(`${API_URL}/api/login`, { email, password });
 
-                if (loginResponse.status === 200) {
-                    authLogin(LoginResponse.data.accessToken, loginResponse.data.user); // Guardamos el token y los datos del usuario
-                    setFormMessage('¡Registro y login exitosos! Redirigiendo al Dashboard...');
-                setTimeout(() => {
-                    handleClose();
-                    resetFormStates(); // Limpia los campos al cerrar
-                    navigate('/dashboard'); // Redirige al Dashboard
-                }, 1500);
-            } else { 
-                // Si el login automático falla 
-                setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, inicia sesión manualmente.');
-                setTimeout(() => {
-                    handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
-                }, 2000); // Espera 2 segundos antes de cambiar a modo de inicio de sesión
-            }
-        } else {
+                // Inicio de sesión automático después del registro
+                try { // Nuevo try-catch ANIDADO para el login automático
+                    const loginResponse = await axios.post(`${API_URL}/api/login`, { email, password });
+
+                    if (loginResponse.status === 200) {
+                        authLogin(loginResponse.data.accessToken, loginResponse.data.user); // Guardamos el token
+                        setFormMessage('¡Registro y login exitosos! Redirigiendo al Dashboard...');
+                        setTimeout(() => {
+                            handleClose();
+                            resetFormStates(); // Limpia los campos al cerrar
+                            navigate('/dashboard'); // Redirige al Dashboard
+                        }, 1500); // Pequeño retraso para mostrar el mensaje de éxito
+                    } else {
+                        // Si el login automático falla
+                        setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, inicia sesión manualmente.');
+                        setTimeout(() => {
+                            handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
+                        }, 2000); // Espera 2 segundos antes de cambiar a modo de inicio sesión
+                    }
+                } catch (loginError) { // Capturamos errores específicos del login automático
+                    console.error('Error en el login automático:', loginError);
+                    if (loginError.response) {
+                        // Axios captura el error.response para códigos de estado de error (4xx, 5xx)
+                        setFormError(`Registro exitoso, pero no se pudo iniciar sesión: ${loginError.response.data.message || 'Error de servidor.'}`);
+                    } else {
+                        setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, intenta iniciar sesión manualmente.');
+                    }
+                    setTimeout(() => {
+                        handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
+                    }, 2000); // Espera 2 segundos antes de cambiar a modo de inicio sesión
+                }
+            } else { // Este else es para si el registro no devuelve 201
                 setFormError('Error desconocido al registrar. Por favor, intenta de nuevo.');
-            }
-        } catch (error) {
-            console.error('Error en el registro:', error);
-            if (error.response) {
-                // Axios captura el error.response para códigos de estado de error (4xx, 5xx)
-                setFormError(error.response.data.message || 'Error al registrar. Verifica los datos.');
-            } else if (error.request) {
-                // La petición fue hecha pero no se recibió respuesta (servidor caído/sin conexión)
-                setFormError('No se pudo conectar con el servidor. Intenta de nuevo más tarde.');
-            } else {
-                // Algo más ocurrió al configurar la petición
-                setFormError('Error desconocido al registrar.');
-            }
+            } 
+        } catch (error) { // Capturamos errores del registro
+                console.error('Error en el registro:', error);
+                if (error.response) {
+                    // Axios captura el error.response para códigos de estado de error (4xx, 5xx)
+                    setFormError(error.response.data.message || 'Error al registrar. Verifica los datos.');
+                } else  {
+                    setFormError('No se pudo conectar con el servidor. Intenta de nuevo más tarde.');
+                }
         } finally {
             setIsLoading(false);
         }
