@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }) => {
     const isAuthenticated = !!token;
 
     if (isLoading) {
+        console.log("AuthContext is loading...");
         return <div>Cargando autenticación...</div>;
     }
 

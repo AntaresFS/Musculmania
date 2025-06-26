@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Nav, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios'; 
-import { Navigate, useNavigate } from 'react-router-dom'; // Para redirigir después del login
+import { useNavigate } from 'react-router-dom'; // Para redirigir después del login
 import { useAuth } from '../context/AuthContext.jsx'; // Importamos el contexto de autenticación
 
 // Definimos la URL de la API desde las variables de entorno 
@@ -70,17 +70,15 @@ const AuthModal = ({ show, handleClose }) => {
 
             if (response.status === 200) { // Axios facilita el acceso directo al status
                 setFormMessage(response.data.message || '¡Inicio de sesión exitoso!');
+                authLogin(response.data.access_token, response.data.user); // Guardamos el token y los datos del usuario
+
+                // Redirigimos al Dashboard después de un login exitoso
+                handleClose(); // Cierra el modal inmediatamente
+                resetFormStates(); // Limpia los campos al cerrar
+                navigate('/dashboard'); // Redirige al Dashboard
+
+                // console.log para depuración, pero no necesario si todo funciona:
                 console.log('Login exitoso:', response.data.user);
-
-                // *** Usar el contexto de autenticación para guardar el usuario y token ***
-                authLogin(response.data.token, response.data.user); // Guardamos el token y los datos
-
-                // Redirigir al usuario al Dashboard después del login exitoso
-                setTimeout(() => {
-                    handleClose();
-                    resetFormStates(); // Limpia los campos al cerrar
-                    navigate('/dashboard'); // Redirige al Dashboard
-                }, 1500); // Pequeño retraso para mostrar el mensaje de éxito
 
             } else { // Esto realmente no debería ocurrir con Axios si el error.response existe, pero es un fallback
                 setFormError('Error desconocido al iniciar sesión.');
@@ -143,29 +141,30 @@ const AuthModal = ({ show, handleClose }) => {
         console.log('Datos a enviar al backend:', userData);
 
         try {
-            const response = await axios.post(`${API_URL}/api/register`, userData);
+            const registerResponse = await axios.post(`${API_URL}/api/register`, userData);
 
-            if (response.status === 201) { // Axios facilita el acceso directo al status
-                setFormMessage(response.data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
+            if (rregisterRsponse.status === 201) { // Axios facilita el acceso directo al status
+                setFormMessage(registerResponse.data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
 
                 // Inicio de sesión automático después del registro
                 try { // Nuevo try-catch ANIDADO para el login automático
                     const loginResponse = await axios.post(`${API_URL}/api/login`, { email, password });
 
                     if (loginResponse.status === 200) {
-                        authLogin(loginResponse.data.accessToken, loginResponse.data.user); // Guardamos el token
+                        authLogin(loginResponse.data.access_token, loginResponse.data.user); // Guardamos el token
                         setFormMessage('¡Registro y login exitosos! Redirigiendo al Dashboard...');
-                        setTimeout(() => {
-                            handleClose();
-                            resetFormStates(); // Limpia los campos al cerrar
-                            navigate('/dashboard'); // Redirige al Dashboard
-                        }, 1500); // Pequeño retraso para mostrar el mensaje de éxito
+
+                        handleClose(); // Cierra el modal inmediatamente
+                        resetFormStates(); // Limpia los campos al cerrar
+                        navigate('/dashboard'); // Redirige al Dashboard
+
+                        // console.log para depuración:
+                        console.log('Login automático exitoso:', loginResponse.data.user, 'Redirigiendo...');
+
                     } else {
                         // Si el login automático falla
                         setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, inicia sesión manualmente.');
-                        setTimeout(() => {
-                            handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
-                        }, 2000); // Espera 2 segundos antes de cambiar a modo de inicio sesión
+                        handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
                     }
                 } catch (loginError) { // Capturamos errores específicos del login automático
                     console.error('Error en el login automático:', loginError);
@@ -174,21 +173,21 @@ const AuthModal = ({ show, handleClose }) => {
                         setFormError(`Registro exitoso, pero no se pudo iniciar sesión: ${loginError.response.data.message || 'Error de servidor.'}`);
                     } else {
                         setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, intenta iniciar sesión manualmente.');
-                    }
-                    setTimeout(() => {
-                        handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
-                    }, 2000); // Espera 2 segundos antes de cambiar a modo de inicio sesión
+                    }   
+                    handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
                 }
             } else { // Este else es para si el registro no devuelve 201
-                setFormError('Error desconocido al registrar. Por favor, intenta de nuevo.');
+                setFormError(registerResponse.data.message || 'Error desconocido al registrar al usuario.');
             } 
         } catch (error) { // Capturamos errores del registro
                 console.error('Error en el registro:', error);
                 if (error.response) {
                     // Axios captura el error.response para códigos de estado de error (4xx, 5xx)
                     setFormError(error.response.data.message || 'Error al registrar. Verifica los datos.');
+                } else if (error.request) {
+                    setFormError('No se pudo conectar con el servidor para registrar. Intenta de nuevo más tarde.');
                 } else  {
-                    setFormError('No se pudo conectar con el servidor. Intenta de nuevo más tarde.');
+                    setFormError('Error desconocido al intentar registrar al usuario.');
                 }
         } finally {
             setIsLoading(false);
