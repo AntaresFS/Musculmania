@@ -10,13 +10,18 @@ const apiClient = axios.create({
     },
 });
 
-// Añade un interceptor de petición
+// Este objeto exportado se usará para inyectar dinámicamente el token
+// desde el AuthContext en la configuración de Axios.
+// Es un patrón común para manejar tokens JWT en interceptores
+// cuando el token vive en un contexto de React o en localStorage.
+let authToken = null;
+
+// Interceptor de solicitudes de Axios
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('jwt_token'); // Obtén el token del localStorage
-        if (token) {
-            // Si el token existe, añádelo al encabezado de autorización
-            config.headers.Authorization = `Bearer ${token}`;
+        if (authToken) {
+            // Si authToken está definido, lo añadimos al encabezado de autorización
+            config.headers.Authorization = `Bearer ${authToken}`;
         }
         return config;
     },
