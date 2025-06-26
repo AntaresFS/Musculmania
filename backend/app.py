@@ -25,6 +25,20 @@ db.init_app(app)
 
 migrate = Migrate(app, db) # Inicializa Flask-Migrate para manejar migraciones de base de datos
 
+# Este decorador le dice a Flask-JWT-Extended cómo encontrar un usuario
+# dado el 'identity' que se guardó en el token (en este caso, el 'id' del usuario)
+@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    identity = jwt_data["sub"] # 'sub' es la clave por defecto para la identidad
+    # Si guardas solo el ID del usuario en el token:
+    user_id = identity.get('id') if isinstance(identity, dict) and 'id' in identity else identity
+    return User.query.get(user_id) # Busca el usuario por su ID
+
+# Esto es una alternativa si el error 422 persiste o si tu token es más complejo
+# @jwt.user_identity_loader
+# def user_identity_lookup(user_object):
+#     return {'id': user_object.id} # Retorna la identidad que se guardará en el token
+
 
 # --- Rutas de la API ---
 @app.route('/')
@@ -128,11 +142,10 @@ def login_user():
 @jwt_required() # <-- Decorador que protege la ruta
 def protected_route():
     # Accede a la identidad del usuario actual con get_jwt_identity
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id) # Buscar el usuario por ID
+    current_user = get_jwt_identity() # Esto ahora devolverá el objeto User si user_lookup_loader funciona
 
-    if user:
-        return jsonify(logged_in_as=user.email, message="¡Acceso concedido a ruta protegida!"), 200
+    if current_user:
+        return jsonify(logged_in_as=current_user.email, message="¡Acceso concedido a ruta protegida!"), 200
     return jsonify(message="Usuario no encontrado."), 404
 
 if __name__ == '__main__':
