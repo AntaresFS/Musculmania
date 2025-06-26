@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Nav, Alert, Spinner } from 'react-bootstrap';
-import axios from 'axios'; // Importamos Axios
+import axios from 'axios'; 
+import { Navigate, useNavigate } from 'react-router-dom'; // Para redirigir después del login
 import { useAuth } from '../context/AuthContext.jsx'; // Importamos el contexto de autenticación
 
 // Definimos la URL de la API desde las variables de entorno 
@@ -8,6 +9,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const AuthModal = ({ show, handleClose }) => {
     const [isRegistering, setIsRegistering] = useState(false);
+    const navigate = useNavigate(); // Usamos useNavigate para redirigir después del login
+    const { login: authLogin } = useAuth (); // Importamos la función de login del contexto de autenticación
+
 
     // --- Estados para los campos del formulario de registro ---
     const [firstName, setFirstName] = useState('');
@@ -27,7 +31,6 @@ const AuthModal = ({ show, handleClose }) => {
     const [formError, setFormError] = useState('');
     const [formMessage, setFormMessage] = useState(''); // Mensaje general para éxito o error no validado
     const [isLoading, setIsLoading] = useState(false); // Nuevo estado para controlar el loading
-    const { login: authLogin } = useAuth (); // Importamos la función de login del contexto de autenticación
 
     // Función para limpiar todos los estados del formulario
     const resetFormStates = () => {
@@ -72,11 +75,12 @@ const AuthModal = ({ show, handleClose }) => {
                 // *** Usar el contexto de autenticación para guardar el usuario y token ***
                 authLogin(response.data.token, response.data.user); // Guardamos el token y los datos
 
-                // Opcional: Cerrar el modal o redirigir
+                // Redirigir al usuario al Dashboard después del login exitoso
                 setTimeout(() => {
                     handleClose();
                     resetFormStates(); // Limpia los campos al cerrar
-                }, 1500);
+                    navigate('/dashboard'); // Redirige al Dashboard
+                }, 1500); // Pequeño retraso para mostrar el mensaje de éxito
 
             } else { // Esto realmente no debería ocurrir con Axios si el error.response existe, pero es un fallback
                 setFormError('Error desconocido al iniciar sesión.');
@@ -143,12 +147,27 @@ const AuthModal = ({ show, handleClose }) => {
 
             if (response.status === 201) { // Axios facilita el acceso directo al status
                 setFormMessage(response.data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
-                // Opcional: pasar al formulario de login después del éxito
+                // Inicio de sesión automático después del registro
+                // Primero logueamos al usuario con los datos de registro
+                const loginData = await axios.post(`${API_URL}/api/login`, { email, password });
+
+                if (loginResponse.status === 200) {
+                    authLogin(LoginResponse.data.accessToken, loginResponse.data.user); // Guardamos el token y los datos del usuario
+                    setFormMessage('¡Registro y login exitosos! Redirigiendo al Dashboard...');
                 setTimeout(() => {
-                    handleToggleAuthMode(false); // Cambiar a la vista de login
-                }, 2000);
-            } else { // Esto no debería suceder con Axios, pero como fallback
-                setFormError('Error desconocido al registrar el usuario.');
+                    handleClose();
+                    resetFormStates(); // Limpia los campos al cerrar
+                    navigate('/dashboard'); // Redirige al Dashboard
+                }, 1500);
+            } else { 
+                // Si el login automático falla 
+                setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, inicia sesión manualmente.');
+                setTimeout(() => {
+                    handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
+                }, 2000); // Espera 2 segundos antes de cambiar a modo de inicio de sesión
+            }
+        } else {
+                setFormError('Error desconocido al registrar. Por favor, intenta de nuevo.');
             }
         } catch (error) {
             console.error('Error en el registro:', error);
