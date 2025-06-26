@@ -16,6 +16,10 @@ const apiClient = axios.create({
 // cuando el token vive en un contexto de React o en localStorage.
 let authToken = null;
 
+export const setAuthToken = (token) => {
+    authToken = token;
+};
+
 // Interceptor de solicitudes de Axios
 apiClient.interceptors.request.use(
     (config) => {

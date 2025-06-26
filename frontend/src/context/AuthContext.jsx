@@ -4,7 +4,7 @@ import { setAuthToken } from '../api/axiosConfig'; // Importamos la función par
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
+    const [token, setTokenInternal] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     // Función setter personalizada para el token que también actualiza el interceptor de Axios
