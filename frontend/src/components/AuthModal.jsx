@@ -143,7 +143,7 @@ const AuthModal = ({ show, handleClose }) => {
         try {
             const registerResponse = await axios.post(`${API_URL}/api/register`, userData);
 
-            if (rregisterRsponse.status === 201) { // Axios facilita el acceso directo al status
+            if (registerResponse.status === 201) { // Axios facilita el acceso directo al status
                 setFormMessage(registerResponse.data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
 
                 // Inicio de sesión automático después del registro
