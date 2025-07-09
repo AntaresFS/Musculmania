@@ -1,6 +1,7 @@
 # backend/models.py
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash # Importa estas funciones
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -30,6 +31,11 @@ class User(db.Model):
     allergies = db.Column(db.Text) # Puede ser un campo de texto largo
     diet_preferences = db.Column(db.Text) # Puede ser un campo de texto largo
 
+    # Relación con ProgressTracking
+    progress_records = db.relationship('ProgressTracking', backref='user', lazy=True, cascade="all, delete-orphan")
+    # Relación con TrainingDay
+    training_days = db.relationship('TrainingDay', backref='user', lazy=True, cascade="all, delete-orphan")
+
     def __repr__(self):
         return f'<User {self.email}>'
 
@@ -55,3 +61,36 @@ class User(db.Model):
             "allergies": self.allergies,
             "diet_preferences": self.diet_preferences
         }
+    
+    # --- Nuevo modelo para el seguimiento de progreso ---
+class ProgressTracking(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) # Fecha del registro
+
+    # Métricas de peso y medidas
+    weight_kg = db.Column(db.Float, nullable=True) # Peso en kilogramos
+    biceps_cm = db.Column(db.Float, nullable=True) # Medida del bíceps en cm
+    chest_cm = db.Column(db.Float, nullable=True)  # Medida del pecho en cm
+    waist_cm = db.Column(db.Float, nullable=True)  # Medida de la cintura en cm
+    hips_cm = db.Column(db.Float, nullable=True)   # Medida de las caderas en cm
+    thigh_cm = db.Column(db.Float, nullable=True)  # Medida del muslo en cm
+    glutes_cm = db.Column(db.Float, nullable=True) # Medida de los glúteos en cm
+
+    def __repr__(self):
+        return f'<Progress {self.user.username} - {self.date.strftime("%Y-%m-%d")}>'
+
+# --- Nuevo modelo para los días de entrenamiento ---
+class TrainingDay(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date()) # Solo la fecha, sin hora
+
+    # Opcional: Campo para una breve descripción o tipo de entrenamiento
+    description = db.Column(db.String(255), nullable=True)
+
+    def __repr__(self):
+        return f'<TrainingDay {self.user.username} - {self.date.strftime("%Y-%m-%d")}>'
+
+    # Asegurarse de que no haya entradas duplicadas para el mismo usuario y fecha
+    __table_args__ = (db.UniqueConstraint('user_id', 'date', name='_user_training_day_uc'),)
