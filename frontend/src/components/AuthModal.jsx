@@ -1,328 +1,358 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form, Nav, Alert } from 'react-bootstrap';
+import { Modal, Button, Form, Nav, Alert, Spinner } from 'react-bootstrap';
+import axios from 'axios'; 
+import { useNavigate } from 'react-router-dom'; // Para redirigir después del login
+import { useAuth } from '../context/AuthContext.jsx'; // Importamos el contexto de autenticación
+
+// Definimos la URL de la API desde las variables de entorno 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const AuthModal = ({ show, handleClose }) => {
-  const [isRegistering, setIsRegistering] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const navigate = useNavigate(); // Usamos useNavigate para redirigir después del login
+    const { login: authLogin } = useAuth (); // Importamos la función de login del contexto de autenticación
 
-  // --- Estados para los campos del formulario de registro ---
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [gender, setGender] = useState(''); // 'male' o 'female'
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [level, setLevel] = useState('');
-  const [allergies, setAllergies] = useState('');
-  const [dietPrefs, setDietPrefs] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  // --- Fin de estados para los campos ---
 
-  const [passwordMatchError, setPasswordMatchError] = useState('');
-  const [formError, setFormError] = useState('');
-  const [registrationSuccess, setRegistrationSuccess] = useState(false); // Nuevo estado para mensaje de éxito
+    // --- Estados para los campos del formulario de registro ---
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [gender, setGender] = useState('');
+    const [email, setEmail] = useState(''); // Usado tanto en registro como en login
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
+    const [level, setLevel] = useState('');
+    const [allergies, setAllergies] = useState('');
+    const [dietPrefs, setDietPrefs] = useState('');
+    const [password, setPassword] = useState(''); // Usado tanto en registro como en login
+    const [confirmPassword, setConfirmPassword] = useState('');
+    // --- Fin de estados para los campos ---
 
-  // Función para manejar el envío del formulario de inicio de sesión
-  const handleLoginSubmit = (event) => {
-    event.preventDefault();
-    console.log('Login Form Submitted');
-    // Lógica para enviar los datos de login al backend
-  };
+    const [passwordMatchError, setPasswordMatchError] = useState('');
+    const [formError, setFormError] = useState('');
+    const [formMessage, setFormMessage] = useState(''); // Mensaje general para éxito o error no validado
+    const [isLoading, setIsLoading] = useState(false); // Nuevo estado para controlar el loading
 
-  // Función para manejar el envío del formulario de registro
-  const handleRegisterSubmit = async (event) => { // Marcamos como async para await el fetch
-    event.preventDefault();
-
-    setFormError(''); // Limpia cualquier error anterior del formulario
-    setPasswordMatchError(''); // Limpia el error de contraseña anterior
-    setRegistrationSuccess(false); // Limpia el mensaje de éxito
-
-    // 1. Validar que las contraseñas coincidan
-    if (password !== confirmPassword) {
-      setPasswordMatchError('Las contraseñas no coinciden.');
-      setFormError('Por favor, corrige los errores del formulario.');
-      return;
-    }
-
-    // 2. Validar campos obligatorios (controlado por `required` y `checkValidity`)
-    const form = event.currentTarget;
-    if (form.checkValidity() === false) {
-      event.stopPropagation();
-      setFormError('Por favor, rellena todos los campos obligatorios.');
-      return;
-    }
-
-    // Si todo es válido, procede con el envío al backend
-    const userData = {
-      firstName,
-      lastName,
-      gender,
-      email,
-      phone,
-      address,
-      level,
-      allergies,
-      dietPrefs,
-      password, // Es importante no enviar confirmPassword al backend
+    // Función para limpiar todos los estados del formulario
+    const resetFormStates = () => {
+        setFirstName('');
+        setLastName('');
+        setGender('');
+        setEmail('');
+        setPhone('');
+        setAddress('');
+        setLevel('');
+        setAllergies('');
+        setDietPrefs('');
+        setPassword('');
+        setConfirmPassword('');
+        setPasswordMatchError('');
+        setFormError('');
+        setFormMessage('');
     };
 
-    console.log('Datos a enviar al backend:', userData);
+    // Al cambiar entre registro y login, limpiar estados de errores y mensajes
+    const handleToggleAuthMode = (mode) => {
+        setIsRegistering(mode);
+        resetFormStates(); // Limpia los campos y mensajes al cambiar de vista
+    };
 
-    // --- Lógica de envío al Backend ---
-    try {
-      const response = await fetch('http://localhost:5000/api/register', { // ¡Asegúrate que la URL sea correcta!
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+    // Función para manejar el envío del formulario de inicio de sesión
+    const handleLoginSubmit = async (event) => {
+        event.preventDefault();
+        setFormError('');
+        setFormMessage('');
+        setIsLoading(true);
 
-      const data = await response.json();
+        const loginData = { email, password };
 
-      if (response.ok) {
-        console.log('Registro exitoso:', data);
-        setRegistrationSuccess(true);
-        // Opcional: Cerrar el modal después de un registro exitoso o redirigir
-        // setTimeout(() => {
-        //   handleClose();
-        //   setIsRegistering(false); // Volver al login view si se cierra
-        // }, 2000);
-      } else {
-        console.error('Error en el registro:', data);
-        setFormError(data.message || 'Error al registrar el usuario. Inténtalo de nuevo.');
-      }
-    } catch (error) {
-      console.error('Error de red o del servidor:', error);
-      setFormError('No se pudo conectar con el servidor. Inténtalo más tarde.');
-    }
-    // --- Fin lógica de envío al Backend ---
-  };
+        try {
+            const response = await axios.post(`${API_URL}/api/login`, loginData);
 
-  return (
-    <Modal show={show} onHide={handleClose} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>{isRegistering ? 'Registro de Clientes' : 'Acceso Clientes'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {!isRegistering ? ( // Contenido del formulario de inicio de sesión
-          <Form onSubmit={handleLoginSubmit}>
-            <Form.Group className="mb-3" controlId="formBasicEmail">
-              <Form.Label>Correo electrónico</Form.Label>
-              <Form.Control type="email" placeholder="Introduce tu correo electrónico" required />
-            </Form.Group>
+            if (response.status === 200) { // Axios facilita el acceso directo al status
+                setFormMessage(response.data.message || '¡Inicio de sesión exitoso!');
+                authLogin(response.data.access_token, response.data.user); // Guardamos el token y los datos del usuario
 
-            <Form.Group className="mb-3" controlId="formBasicPassword">
-              <Form.Label>Contraseña</Form.Label>
-              <Form.Control type="password" placeholder="Contraseña" required />
-            </Form.Group>
+                // Redirigimos al Dashboard después de un login exitoso
+                handleClose(); // Cierra el modal inmediatamente
+                resetFormStates(); // Limpia los campos al cerrar
+                navigate('/dashboard'); // Redirige al Dashboard
 
-            <Button variant="primary" type="submit" className="w-100 mb-3">
-              Iniciar Sesión
-            </Button>
+                // console.log para depuración, pero no necesario si todo funciona:
+                console.log('Login exitoso:', response.data.user);
 
-            <div className="text-center">
-              <Nav.Link onClick={() => console.log('Recuperar contraseña')} className="text-info">
-                ¿Olvidaste tu contraseña?
-              </Nav.Link>
-              <p className="mt-3">
-                ¿No tienes cuenta?{' '}
-                <Nav.Link onClick={() => setIsRegistering(true)} className="text-info d-inline-block">
-                  Regístrate aquí
-                </Nav.Link>
-              </p>
-            </div>
-          </Form>
-        ) : ( // Contenido del formulario de registro
-          <Form noValidate onSubmit={handleRegisterSubmit}>
-            {/* Campo de Nombre */}
-            <Form.Group className="mb-3" controlId="formRegisterFirstName">
-              <Form.Label>Nombre</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Introduce tu nombre"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
-            </Form.Group>
+            } else { // Esto realmente no debería ocurrir con Axios si el error.response existe, pero es un fallback
+                setFormError('Error desconocido al iniciar sesión.');
+            }
+        } catch (error) {
+            console.error('Error en el login:', error);
+            if (error.response) {
+                // Axios captura el error.response para códigos de estado de error (4xx, 5xx)
+                setFormError(error.response.data.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+            } else if (error.request) {
+                // La petición fue hecha pero no se recibió respuesta (servidor caído/sin conexión)
+                setFormError('No se pudo conectar con el servidor. Intenta de nuevo más tarde.');
+            } else {
+                // Algo más ocurrió al configurar la petición
+                setFormError('Error desconocido al iniciar sesión.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-            {/* Campo de Apellidos */}
-            <Form.Group className="mb-3" controlId="formRegisterLastName">
-              <Form.Label>Apellidos</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Introduce tus apellidos"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
-            </Form.Group>
+    // Función para manejar el envío del formulario de registro
+    const handleRegisterSubmit = async (event) => {
+        event.preventDefault();
 
-            {/* Campo de Sexo (Radio Buttons) */}
-            <Form.Group className="mb-3" controlId="formRegisterGender">
-              <Form.Label>Sexo</Form.Label>
-              <div>
-                <Form.Check
-                  inline
-                  type="radio"
-                  label="Hombre"
-                  name="gender"
-                  id="genderMale"
-                  value="male"
-                  checked={gender === 'male'}
-                  onChange={(e) => setGender(e.target.value)}
-                  required
-                />
-                <Form.Check
-                  inline
-                  type="radio"
-                  label="Mujer"
-                  name="gender"
-                  id="genderFemale"
-                  value="female"
-                  checked={gender === 'female'}
-                  onChange={(e) => setGender(e.target.value)}
-                  required
-                />
-              </div>
-            </Form.Group>
+        setFormError('');
+        setFormMessage('');
+        setPasswordMatchError('');
+        setIsLoading(true);
 
-            <Form.Group className="mb-3" controlId="formRegisterEmail">
-              <Form.Label>Correo electrónico (para iniciar sesión)</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="Introduce tu correo electrónico"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </Form.Group>
+        // 1. Validar que las contraseñas coincidan
+        if (password !== confirmPassword) {
+            setPasswordMatchError('Las contraseñas no coinciden.');
+            setIsLoading(false);
+            return;
+        }
 
-            <Form.Group className="mb-3" controlId="formRegisterPhone">
-              <Form.Label>Número de Teléfono</Form.Label>
-              <Form.Control
-                type="tel"
-                placeholder="Ej: +34 600123456"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </Form.Group>
+        // 2. Validar campos obligatorios (controlado por `required` y `checkValidity`)
+        const form = event.currentTarget;
+        if (form.checkValidity() === false || gender === '' || level === '') { // Añadimos validación para select
+            event.stopPropagation();
+            setFormError('Por favor, rellena todos los campos obligatorios.');
+            setIsLoading(false);
+            return;
+        }
 
-            {/* Campo de Dirección simple */}
-            <Form.Group className="mb-3" controlId="formRegisterAddress">
-              <Form.Label>Dirección</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Tu dirección completa (Calle, Nº, CP, Localidad)"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                required
-              />
-            </Form.Group>
+        const userData = {
+            firstName,
+            lastName,
+            gender,
+            email,
+            phone,
+            address,
+            level,
+            allergies,
+            dietPrefs,
+            password,
+        };
 
-            <Form.Group className="mb-3" controlId="formRegisterLevel">
-              <Form.Label>Nivel del Cliente</Form.Label>
-              <Form.Select
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                required
-              >
-                <option value="">Selecciona tu nivel</option>
-                <option value="principiante">Principiante</option>
-                <option value="intermedio">Intermedio</option>
-                <option value="avanzado">Avanzado</option>
-              </Form.Select>
-            </Form.Group>
+        console.log('Datos a enviar al backend:', userData);
 
-            <Form.Group className="mb-3" controlId="formRegisterAllergies">
-              <Form.Label>Alergias alimenticias e intolerancias</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                placeholder="Ej: Gluten, lactosa, frutos secos..."
-                value={allergies}
-                onChange={(e) => setAllergies(e.target.value)}
-              />
-            </Form.Group>
+        try {
+            const registerResponse = await axios.post(`${API_URL}/api/register`, userData);
 
-            <Form.Group className="mb-3" controlId="formRegisterDietPrefs">
-              <Form.Label>Preferencias en la dieta</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                placeholder="Ej: Vegana, vegetariana, sin carnes rojas..."
-                value={dietPrefs}
-                onChange={(e) => setDietPrefs(e.target.value)}
-              />
-            </Form.Group>
+            if (registerResponse.status === 201) { // Axios facilita el acceso directo al status
+                setFormMessage(registerResponse.data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
 
-            {/* Campo de Contraseña */}
-            <Form.Group className="mb-3" controlId="formRegisterPassword">
-              <Form.Label>Contraseña</Form.Label>
-              <Form.Control
-                type="password"
-                placeholder="Crea tu contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </Form.Group>
+                // Inicio de sesión automático después del registro
+                try { // Nuevo try-catch ANIDADO para el login automático
+                    const loginResponse = await axios.post(`${API_URL}/api/login`, { email, password });
 
-            {/* Campo de Confirmar Contraseña */}
-            <Form.Group className="mb-3" controlId="formRegisterConfirmPassword">
-              <Form.Label>Confirmar Contraseña</Form.Label>
-              <Form.Control
-                type="password"
-                placeholder="Confirma tu contraseña"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (passwordMatchError && password === e.target.value) {
-                    setPasswordMatchError('');
-                  }
-                }}
-                required
-                className={passwordMatchError ? 'is-invalid' : ''}
-              />
-              {passwordMatchError && (
-                <Form.Text className="text-danger">
-                  {passwordMatchError}
-                </Form.Text>
-              )}
-            </Form.Group>
+                    if (loginResponse.status === 200) {
+                        authLogin(loginResponse.data.access_token, loginResponse.data.user); // Guardamos el token
+                        setFormMessage('¡Registro y login exitosos! Redirigiendo al Dashboard...');
 
-            {/* Mensaje de error general del formulario */}
-            {formError && (
-              <Alert variant="danger" className="mt-3">
-                {formError}
-              </Alert>
-            )}
+                        handleClose(); // Cierra el modal inmediatamente
+                        resetFormStates(); // Limpia los campos al cerrar
+                        navigate('/dashboard'); // Redirige al Dashboard
 
-            {/* Mensaje de éxito de registro */}
-            {registrationSuccess && (
-              <Alert variant="success" className="mt-3">
-                ¡Registro exitoso! Ya puedes iniciar sesión.
-              </Alert>
-            )}
+                        // console.log para depuración:
+                        console.log('Login automático exitoso:', loginResponse.data.user, 'Redirigiendo...');
 
-            <Button variant="success" type="submit" className="w-100 mb-3">
-              Registrarse
-            </Button>
+                    } else {
+                        // Si el login automático falla
+                        setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, inicia sesión manualmente.');
+                        handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
+                    }
+                } catch (loginError) { // Capturamos errores específicos del login automático
+                    console.error('Error en el login automático:', loginError);
+                    if (loginError.response) {
+                        // Axios captura el error.response para códigos de estado de error (4xx, 5xx)
+                        setFormError(`Registro exitoso, pero no se pudo iniciar sesión: ${loginError.response.data.message || 'Error de servidor.'}`);
+                    } else {
+                        setFormError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Por favor, intenta iniciar sesión manualmente.');
+                    }   
+                    handleToggleAuthMode(false); // Cambia a modo de inicio de sesión
+                }
+            } else { // Este else es para si el registro no devuelve 201
+                setFormError(registerResponse.data.message || 'Error desconocido al registrar al usuario.');
+            } 
+        } catch (error) { // Capturamos errores del registro
+                console.error('Error en el registro:', error);
+                if (error.response) {
+                    // Axios captura el error.response para códigos de estado de error (4xx, 5xx)
+                    setFormError(error.response.data.message || 'Error al registrar. Verifica los datos.');
+                } else if (error.request) {
+                    setFormError('No se pudo conectar con el servidor para registrar. Intenta de nuevo más tarde.');
+                } else  {
+                    setFormError('Error desconocido al intentar registrar al usuario.');
+                }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-            <div className="text-center">
-              <p className="mt-3">
-                ¿Ya tienes cuenta?{' '}
-                <Nav.Link onClick={() => setIsRegistering(false)} className="text-info d-inline-block">
-                  Inicia Sesión
-                </Nav.Link>
-              </p>
-            </div>
-          </Form>
-        )}
-      </Modal.Body>
-    </Modal>
-  );
+    return (
+        <Modal show={show} onHide={handleClose} centered>
+            <Modal.Header closeButton>
+                <Modal.Title>{isRegistering ? 'Registro de Clientes' : 'Acceso Clientes'}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {/* Mensaje general de éxito/error (no de validación de campos) */}
+                {formMessage && (
+                    <Alert variant={formError ? 'danger' : 'success'} className="mt-3">
+                        {formMessage}
+                    </Alert>
+                )}
+                {formError && (
+                    <Alert variant="danger" className="mt-3">
+                        {formError}
+                    </Alert>
+                )}
+
+                {!isRegistering ? ( // Contenido del formulario de inicio de sesión
+                    <Form noValidate onSubmit={handleLoginSubmit}>
+                        <Form.Group className="mb-3" controlId="formBasicEmail">
+                            <Form.Label>Correo electrónico</Form.Label>
+                            <Form.Control
+                                type="email"
+                                placeholder="Introduce tu correo electrónico"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Label>Contraseña</Form.Label>
+                            <Form.Control
+                                type="password"
+                                placeholder="Contraseña"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Button variant="primary" type="submit" className="w-100 mb-3" disabled={isLoading}>
+                            {isLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Iniciar Sesión'}
+                        </Button>
+
+                        <div className="text-center">
+                            <Nav.Link onClick={() => console.log('Recuperar contraseña')} className="text-info">
+                                ¿Olvidaste tu contraseña?
+                            </Nav.Link>
+                            <p className="mt-3">
+                                ¿No tienes cuenta?{' '}
+                                <Nav.Link onClick={() => handleToggleAuthMode(true)} className="text-info d-inline-block">
+                                    Regístrate aquí
+                                </Nav.Link>
+                            </p>
+                        </div>
+                    </Form>
+                ) : ( // Contenido del formulario de registro
+                    <Form noValidate onSubmit={handleRegisterSubmit}>
+                        <Form.Group className="mb-3" controlId="formRegisterFirstName">
+                            <Form.Label>Nombre</Form.Label>
+                            <Form.Control type="text" placeholder="Introduce tu nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterLastName">
+                            <Form.Label>Apellidos</Form.Label>
+                            <Form.Control type="text" placeholder="Introduce tus apellidos" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterGender">
+                            <Form.Label>Sexo</Form.Label>
+                            <div>
+                                <Form.Check inline type="radio" label="Hombre" name="gender" id="genderMale" value="male" checked={gender === 'male'} onChange={(e) => setGender(e.target.value)} required />
+                                <Form.Check inline type="radio" label="Mujer" name="gender" id="genderFemale" value="female" checked={gender === 'female'} onChange={(e) => setGender(e.target.value)} required />
+                                <Form.Check inline type="radio" label="Otro" name="gender" id="genderOther" value="other" checked={gender === 'other'} onChange={(e) => setGender(e.target.value)} required />
+                            </div>
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterEmail">
+                            <Form.Label>Correo electrónico (para iniciar sesión)</Form.Label>
+                            <Form.Control type="email" placeholder="Introduce tu correo electrónico" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterPhone">
+                            <Form.Label>Número de Teléfono</Form.Label>
+                            <Form.Control type="tel" placeholder="Ej: +34 600123456" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterAddress">
+                            <Form.Label>Dirección</Form.Label>
+                            <Form.Control type="text" placeholder="Tu dirección completa (Calle, Nº, CP, Localidad)" value={address} onChange={(e) => setAddress(e.target.value)} required />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterLevel">
+                            <Form.Label>Nivel del Cliente</Form.Label>
+                            <Form.Select value={level} onChange={(e) => setLevel(e.target.value)} required>
+                                <option value="">Selecciona tu nivel</option>
+                                <option value="principiante">Principiante</option>
+                                <option value="intermedio">Intermedio</option>
+                                <option value="avanzado">Avanzado</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterAllergies">
+                            <Form.Label>Alergias alimenticias e intolerancias (opcional)</Form.Label>
+                            <Form.Control as="textarea" rows={3} placeholder="Ej: Gluten, lactosa, frutos secos..." value={allergies} onChange={(e) => setAllergies(e.target.value)} />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterDietPrefs">
+                            <Form.Label>Preferencias en la dieta (opcional)</Form.Label>
+                            <Form.Control as="textarea" rows={3} placeholder="Ej: Vegana, vegetariana, sin carnes rojas..." value={dietPrefs} onChange={(e) => setDietPrefs(e.target.value)} />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterPassword">
+                            <Form.Label>Contraseña</Form.Label>
+                            <Form.Control type="password" placeholder="Crea tu contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formRegisterConfirmPassword">
+                            <Form.Label>Confirmar Contraseña</Form.Label>
+                            <Form.Control
+                                type="password"
+                                placeholder="Confirma tu contraseña"
+                                value={confirmPassword}
+                                onChange={(e) => {
+                                    setConfirmPassword(e.target.value);
+                                    // Limpiar error de coincidencia si las contraseñas coinciden de nuevo
+                                    if (passwordMatchError && password === e.target.value) {
+                                        setPasswordMatchError('');
+                                    }
+                                }}
+                                required
+                                className={passwordMatchError ? 'is-invalid' : ''}
+                            />
+                            {passwordMatchError && (
+                                <Form.Text className="text-danger">
+                                    {passwordMatchError}
+                                </Form.Text>
+                            )}
+                        </Form.Group>
+
+                        <Button variant="success" type="submit" className="w-100 mb-3" disabled={isLoading}>
+                            {isLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Registrarse'}
+                        </Button>
+
+                        <div className="text-center">
+                            <p className="mt-3">
+                                ¿Ya tienes cuenta?{' '}
+                                <Nav.Link onClick={() => handleToggleAuthMode(false)} className="text-info d-inline-block">
+                                    Inicia Sesión
+                                </Nav.Link>
+                            </p>
+                        </div>
+                    </Form>
+                )}
+            </Modal.Body>
+        </Modal>
+    );
 };
 
 export default AuthModal;

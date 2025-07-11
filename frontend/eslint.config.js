@@ -29,5 +29,13 @@ export default [
         { allowConstantExport: true },
       ],
     },
+    overrides: [
+      {
+        files: ['src/context/AuthContext.jsx'],
+        rules: {
+          'react-refresh/only-export-components': 'off', // Desactivar la regla para este archivo específico
+        }
+      }
+    ]
   },
 ]

@@ -69,13 +69,12 @@ Una vez dentro del entorno (Codespaces o Dev Container local) y con las dependen
 
 2.  **En la primera terminal, inicia el backend:**
     ```bash
-    python backend/app.py
+    flask run
     ```
 
 3.  **En la segunda terminal, inicia el frontend:**
     ```bash
-    cd frontend
-    npm run dev
+    cd frontend && npm run dev
     ```
 
 4.  Accede a la aplicación a través del puerto del frontend (normalmente `5173`) que VS Code o Codespaces habrán reenviado automáticamente a tu navegador.
