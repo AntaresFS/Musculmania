@@ -66,7 +66,7 @@ class User(db.Model):
 class ProgressTracking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) # Fecha del registro
+    record_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) # Fecha del registro
 
     # Métricas de peso y medidas
     weight_kg = db.Column(db.Float, nullable=True) # Peso en kilogramos
@@ -84,7 +84,7 @@ class ProgressTracking(db.Model):
 class TrainingDay(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date()) # Solo la fecha, sin hora
+    training_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date()) # Solo la fecha, sin hora
 
     # Opcional: Campo para una breve descripción o tipo de entrenamiento
     description = db.Column(db.String(255), nullable=True)

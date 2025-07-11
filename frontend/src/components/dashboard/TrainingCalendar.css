@@ -1,0 +1,97 @@
+/* frontend/src/components/dashboard/TrainingCalendar.css */
+
+/* Estilos generales del contenedor del calendario */
+.custom-calendar {
+  border: none; /* Elimina el borde por defecto */
+  border-radius: 0.5rem; /* Bordes redondeados */
+  font-family: 'Arial', sans-serif; /* Consistente con tu App.css */
+  width: 100%; /* Ajusta el ancho */
+  max-width: 400px; /* Limita el ancho máximo para evitar que sea demasiado grande */
+  box-shadow: none; /* La Card ya tiene sombra */
+}
+
+/* Navegación (meses, años) */
+.custom-calendar .react-calendar__navigation {
+  background-color: #f8f9fa; /* Fondo claro */
+  border-bottom: 1px solid #e9ecef; /* Separador sutil */
+  margin-bottom: 1em;
+}
+
+.custom-calendar .react-calendar__navigation button {
+  color: #343a40; /* Texto gris oscuro */
+  font-weight: bold;
+  background: none;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.custom-calendar .react-calendar__navigation button:enabled:hover,
+.custom-calendar .react-calendar__navigation button:enabled:focus {
+  background-color: #e9ecef; /* Gris muy claro al pasar el ratón */
+}
+
+/* Días de la semana (L, M, X, J, V, S, D) */
+.custom-calendar .react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #6c757d; /* Gris secundario */
+}
+
+/* Números de los días */
+.custom-calendar .react-calendar__tile {
+  padding: 0.5em;
+  border-radius: 0.25rem;
+  color: #212529; /* Negro para los días */
+  transition: background-color 0.2s;
+}
+
+.custom-calendar .react-calendar__tile:enabled:hover,
+.custom-calendar .react-calendar__tile:enabled:focus {
+  background-color: #e9ecef; /* Gris claro al pasar el ratón */
+}
+
+/* Día actual */
+.custom-calendar .react-calendar__tile--now {
+  background: #ced4da; /* Gris claro para el día actual */
+  color: #212529;
+  border-radius: 0.25rem;
+}
+
+.custom-calendar .react-calendar__tile--now:enabled:hover,
+.custom-calendar .react-calendar__tile--now:enabled:focus {
+  background: #adb5bd; /* Gris un poco más oscuro al pasar el ratón */
+}
+
+/* Día seleccionado (si se implementa selección) */
+.custom-calendar .react-calendar__tile--active {
+  background: #343a40; /* Negro/Gris oscuro para el día activo */
+  color: #ffffff;
+  border-radius: 0.25rem;
+}
+
+.custom-calendar .react-calendar__tile--active:enabled:hover,
+.custom-calendar .react-calendar__tile--active:enabled:focus {
+  background: #212529; /* Negro más puro al pasar el ratón */
+}
+
+/* Días de entrenamiento */
+.custom-calendar .training-day {
+  background-color: #6c757d; /* Gris medio para los días de entrenamiento */
+  color: #ffffff; /* Texto blanco para contraste */
+  font-weight: bold;
+  border-radius: 0.25rem;
+}
+
+.custom-calendar .training-day:enabled:hover,
+.custom-calendar .training-day:enabled:focus {
+  background-color: #495057; /* Gris oscuro al pasar el ratón */
+}
+
+/* Ajustes para la vista de años/décadas/siglos */
+.react-calendar__year-view .react-calendar__tile,
+.react-calendar__decade-view .react-calendar__tile,
+.react-calendar__century-view .react-calendar__tile {
+  padding: 2em 0.5em; /* Más padding para que se vean mejor */
+}
