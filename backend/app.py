@@ -7,7 +7,7 @@ from .models import db, Project, User, ProgressTracking, TrainingDay # Importa e
 from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
 from flask_migrate import Migrate # Importa Flask-Migrate 
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
-from datetime, date
+from datetime import datetime
 
 load_dotenv() # Carga las variables de entorno desde .env
 
