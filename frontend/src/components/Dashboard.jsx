@@ -37,14 +37,12 @@ const Dashboard = () => {
             try {
                 const progressResponse = await apiClient.get(`/api/progress/${user.id}`);
                 setProgressData(progressResponse.data);
+                setProgressError(null); // Limpiar cualquier error previo
             } catch (err) {
                 console.error("Error al obtener datos de progreso:", err);
                 if (err.response && err.response.status === 401) {
                     setProgressError("No autorizado. Tu sesión ha expirado.");
                     logout(); // Cierra la sesión si el token no es válido
-                } else if (err.response && err.response.status === 404) {
-                    setProgressError("No hay registros de progreso aún.");
-                    setProgressData([]); // Asegurarse de que los datos estén vacíos
                 } else {
                     setProgressError("Error al cargar los datos de progreso.");
                 }
@@ -56,14 +54,12 @@ const Dashboard = () => {
             try {
                 const trainingDaysResponse = await apiClient.get(`/api/training-days/${user.id}`);
                 setTrainingDaysData(trainingDaysResponse.data);
+                setTrainingDaysError(null); // Limpiar cualquier error previo
             } catch (err) {
                 console.error("Error al obtener días de entrenamiento:", err);
                 if (err.response && err.response.status === 401) {
                     setTrainingDaysError("No autorizado. Tu sesión ha expirado.");
                     logout(); // Cierra la sesión si el token no es válido
-                } else if (err.response && err.response.status === 404) {
-                    setTrainingDaysError("No hay días de entrenamiento registrados aún.");
-                    setTrainingDaysData([]); // Asegurarse de que los datos estén vacíos
                 } else {
                     setTrainingDaysError("Error al cargar los días de entrenamiento.");
                 }
