@@ -205,7 +205,7 @@ def get_progress_records(user_id):
 
     progress_records = ProgressTracking.query.filter_by(user_id=user_id).order_by(ProgressTracking.record_date).all()
     if not progress_records:
-        return jsonify({'message': 'No se encontraron registros de progreso para este usuario.'}), 404
+        return jsonify([]), 200
     
     return jsonify([record.to_dict() for record in progress_records]), 200
 
@@ -267,7 +267,7 @@ def get_training_days(user_id):
 
     training_days = TrainingDay.query.filter_by(user_id=user_id).order_by(TrainingDay.training_date).all()
     if not training_days:
-        return jsonify({'message': 'No se encontraron días de entrenamiento para este usuario.'}), 404
+        return jsonify([]), 200
     
     return jsonify([day.to_dict() for day in training_days]), 200
 
