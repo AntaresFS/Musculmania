@@ -1,6 +1,6 @@
 # .devcontainer/Dockerfile
 # Usamos una imagen base de Microsoft que ya viene preparada para Dev Containers
-FROM mcr.microsoft.com/devcontainers/python:1-3.11-bullseye
+FROM mcr.microsoft.com/devcontainers/python:1-3.11-bookworm
 
 # Instala Node.js (necesario para React/Vite) y el cliente de PostgreSQL
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
