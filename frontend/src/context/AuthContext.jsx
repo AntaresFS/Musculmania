@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import AuthContext from './authContext'; // Importamos el contexto desde el nuevo archivo
 import { setAuthToken } from '../api/axiosConfig'; // Importamos la función para establecer el token en Axios
 
+// Componente AuthProvider que envuelve la aplicación y proporciona el contexto de autenticación
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setTokenInternal] = useState(null);

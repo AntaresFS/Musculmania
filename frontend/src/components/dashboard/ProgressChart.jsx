@@ -6,6 +6,7 @@ import {
 import { Card, Spinner, Alert } from 'react-bootstrap';
 import moment from 'moment'; // Importa moment para formatear fechas
 
+// Componente ProgressChart que recibe datos, estado de carga y errores como props
 const ProgressChart = ({ data, loading, error }) => {
   if (loading) {
     return (

@@ -69,7 +69,7 @@ const Dashboard = () => {
         };
 
         fetchDashboardData();
-    }, [user, logout]); // Dependencias: user para el ID, logout para la función
+    }, [user, logout]); // Dependencias: user para el ID, logout para la función de cierre de sesión
 
     return (
         <Container className="py-5 bg-light min-vh-100"> {/* bg-light para fondo, min-vh-100 para altura */}

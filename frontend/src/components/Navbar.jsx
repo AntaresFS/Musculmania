@@ -14,6 +14,10 @@ const AppNavbar = ({ onShowAuthModal }) => {
     navigate('/'); // Redirige al usuario a la página principal después de cerrar sesión
   };
 
+  const handleHomeRedirect = () => {
+    navigate('/'); // Redirige a la página de inicio
+  };
+
   const handleDashboardRedirect = () => {
     navigate('/dashboard'); // Redirige al Dashboard si el usuario está autenticado
   };
@@ -37,7 +41,7 @@ const AppNavbar = ({ onShowAuthModal }) => {
   return (
         <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
             <Container>
-                <Navbar.Brand href="#home" className="text-white fs-4 fw-bold">
+                <Navbar.Brand onClick={handleHomeRedirect} className="text-white fs-4 fw-bold">
                     <img
                         src="/logo-placeholder.png"
                         width="40"
@@ -50,7 +54,7 @@ const AppNavbar = ({ onShowAuthModal }) => {
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="ms-auto">
-                        <Nav.Link href="#home" className="text-white mx-2">Inicio</Nav.Link>
+                        <Nav.Link onClick={handleHomeRedirect} className="text-white mx-2">Inicio</Nav.Link>
                         <Nav.Link href="#suplementos" className="text-white mx-2">Suplementos</Nav.Link>
                         <Nav.Link href="#entrenamiento" className="text-white mx-2">Entrenamiento & Dieta</Nav.Link>
                         <Nav.Link href="#nosotros" className="text-white mx-2">Nosotros</Nav.Link>
@@ -65,6 +69,7 @@ const AppNavbar = ({ onShowAuthModal }) => {
                                 align="end" // Alinea el menú a la derecha
                                 className="text-white mx-2"
                             >
+                                <NavDropdown.Item onClick={handleDashboardRedirect}>Dashboard</NavDropdown.Item>
                                 <NavDropdown.Item onClick={handleProfileRedirect}>Mi Perfil</NavDropdown.Item>
                                 <NavDropdown.Item onClick={handleRoutineRedirect}>Rutina de Entrenamiento</NavDropdown.Item>
                                 <NavDropdown.Item onClick={handleDietRedirect}>Dieta Personalizada</NavDropdown.Item>
