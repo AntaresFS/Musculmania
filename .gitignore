@@ -5,7 +5,8 @@
 __pycache__/
 *.pyc
 
-# Variables de entorno
+# Variables de entorno (never commit real secrets)
+.env
 backend/.env
 
 # Dependencias de Node

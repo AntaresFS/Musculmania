@@ -1,30 +1,44 @@
 # backend/app.py
 import os
+import sys
+from pathlib import Path
 from flask import Flask, jsonify, request # Importa 'request' para acceder a los datos de la petición
 from flask_cors import CORS
 from dotenv import load_dotenv
-from .models import db, Project, User, ProgressTracking, TrainingDay # Importa el modelo User
+
+# Ensure the repo root is on sys.path so `backend.models` resolves with flask run and python backend/app.py
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+load_dotenv(_ROOT / '.env')
+
+from backend.models import db, Project, User, ProgressTracking, TrainingDay # Importa el modelo User
 from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
 from flask_migrate import Migrate # Importa Flask-Migrate 
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
 from datetime import datetime
-
-load_dotenv() # Carga las variables de entorno desde .env
 
 app = Flask(__name__)
 CORS(app) # Habilita CORS para todas las rutas
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_super_secret_key') # Usa una clave secreta para la sesión y CSRF
+# Require per-environment secrets; do not ship a shared default in source control.
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    raise RuntimeError('SECRET_KEY is not set. Copy .env.example to .env and generate a unique key.')
 
 # Configuración de JWT
-app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY', 'super-secret-jwt-key') # ¡CAMBIA ESTO EN PRODUCCIÓN!
+app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY') or app.config['SECRET_KEY']
 jwt = JWTManager(app) # <-- Inicializa JWTManager
 
 db.init_app(app)
 
 migrate = Migrate(app, db) # Inicializa Flask-Migrate para manejar migraciones de base de datos
+
+# Fallback so tables exist when the app starts (flask run / python -m) even if migrations have not been applied.
+with app.app_context():
+    db.create_all()
 
 # Este decorador le dice a Flask-JWT-Extended cómo encontrar un usuario
 # dado el 'identity' que se guardó en el token (en este caso, el 'id' del usuario)
@@ -284,6 +298,4 @@ def get_training_days(user_id):
 
 # --- Inicialización de la base de datos ---
 if __name__ == '__main__':
-    # Asegúrate de que la base de datos se haya inicializado y las tablas existan
-    # Esto ya lo tienes en el bloque `with app.app_context(): db.create_all()`
     app.run(host='0.0.0.0', port=5000, debug=os.environ.get('FLASK_DEBUG') == '1')

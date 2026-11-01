@@ -61,7 +61,8 @@ def upgrade():
     sa.Column('training_date', sa.Date(), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('user_id', 'training_date', name='_user_training_day_uc')
     )
     # ### end Alembic commands ###
 

@@ -102,6 +102,9 @@ class TrainingDay(db.Model):
 
     description = db.Column(db.String(255), nullable=True)
 
+    # Asegurarse de que no haya entradas duplicadas para el mismo usuario y fecha
+    __table_args__ = (db.UniqueConstraint('user_id', 'training_date', name='_user_training_day_uc'),)
+
     def to_dict(self): # Añadido o corregido to_dict()
         return {
             'id': self.id,
@@ -112,6 +115,3 @@ class TrainingDay(db.Model):
 
     def __repr__(self):
         return f'<TrainingDay {self.user.email} - {self.training_date.strftime("%Y-%m-%d")}>'
-
-    # Asegurarse de que no haya entradas duplicadas para el mismo usuario y fecha
-__table_args__ = (db.UniqueConstraint('user_id', 'training_date', name='_user_training_day_uc'),)

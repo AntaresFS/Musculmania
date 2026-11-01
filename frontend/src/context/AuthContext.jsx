@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('user_data');
         setToken(null); // Usa el setter personalizado para actualizar el token
         setUser(null);
-        console.log("AuthContext logout - User and toen cleared");
+        console.log("AuthContext logout - User and token cleared");
     };
 
     const isAuthenticated = !!token;
