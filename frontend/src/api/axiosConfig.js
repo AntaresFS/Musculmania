@@ -10,9 +10,19 @@ const apiClient = axios.create({
     },
 });
 
-// RED DE SEGURIDAD: Inicializamos la variable interna directamente con lo que haya en localStorage.
-// Así, el interceptor tendrá acceso al token desde el milisegundo cero, incluso antes de que React cargue.
-let authToken = localStorage.getItem('jwt_token');
+// Portable default for SSR/Node. localStorage is only read later, and only when available.
+let authToken = null;
+
+const getStoredAuthToken = () => {
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage.getItem('jwt_token');
+        }
+    } catch {
+        // Private browsing and other restricted contexts can throw on localStorage access.
+    }
+    return null;
+};
 
 // Este objeto exportado se usará para actualizar dinámicamente el token desde el AuthContext
 export const setAuthToken = (token) => {
@@ -22,9 +32,9 @@ export const setAuthToken = (token) => {
 // Interceptor de solicitudes de Axios
 apiClient.interceptors.request.use(
     (config) => {
-        // Ahora, si authToken existe (ya sea por el localStorage inicial o por setAuthToken), se inyecta siempre de forma limpia
-        if (authToken) {
-            config.headers.Authorization = `Bearer ${authToken}`;
+        const token = authToken ?? getStoredAuthToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
     },

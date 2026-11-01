@@ -34,10 +34,15 @@ def user_lookup_callback(_jwt_header, jwt_data):
     
     # Si el identity es un diccionario, obtenemos el id del usuario
     if isinstance(identity, dict):
-        user_id = identity.get('id')
+        if 'id' not in identity:
+            return None
+        user_id = identity['id']
     # Si el identity es un entero, es el id del usuario
     else:
         user_id = identity
+
+    if user_id is None:
+        return None
 
     # Buscamos el usuario en la base de datos y lo devolvemos
     return db.session.get(User, user_id)
