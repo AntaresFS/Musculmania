@@ -78,3 +78,13 @@ Una vez dentro del entorno (Codespaces o Dev Container local) y con las dependen
     ```
 
 4.  Accede a la aplicación a través del puerto del frontend (normalmente `5173`) que VS Code o Codespaces habrán reenviado automáticamente a tu navegador.
+
+### Probar el dashboard con datos ficticios
+
+Para ver una evolución de peso y medidas y días de entrenamiento sin crear registros en la base de datos:
+
+1. En `frontend`, copia `.env.example` a `.env.local`.
+2. Inicia sesión con un usuario de prueba y abre `/dashboard`. Se mostrarán 13 registros semanales de progreso y días de entrenamiento de los últimos 90 días.
+3. Para volver a consultar la API y mostrar los datos reales, elimina `VITE_USE_MOCK_DASHBOARD_DATA` de `.env.local` o cámbialo a `false`.
+
+Reinicia el servidor de Vite después de cambiar `.env.local`. No actives los datos ficticios en una compilación de producción.

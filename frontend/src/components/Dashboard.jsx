@@ -7,6 +7,9 @@ import { useAuth } from '../context/AuthContext.jsx'; // Para acceder a los dato
 // Importa los nuevos componentes del dashboard
 import ProgressChart from '../components/dashboard/ProgressChart.jsx';
 import TrainingCalendar from '../components/dashboard/TrainingCalendar.jsx';
+import { getMockDashboardData } from '../data/mockDashboardData.js';
+
+const useMockDashboardData = import.meta.env.VITE_USE_MOCK_DASHBOARD_DATA === 'true';
 
 const Dashboard = () => {
     const { user, logout, isLoading } = useAuth(); // Obtenemos el usuario y la función de logout del contexto
@@ -34,6 +37,17 @@ const Dashboard = () => {
                 setTrainingDaysLoading(false);
                 setProgressError("No se pudo obtener el ID de usuario para cargar los datos.");
                 setTrainingDaysError("No se pudo obtener el ID de usuario para cargar los datos.");
+                return;
+            }
+
+            if (useMockDashboardData) {
+                const mockData = getMockDashboardData(user.id);
+                setProgressData(mockData.progressData);
+                setTrainingDaysData(mockData.trainingDaysData);
+                setProgressError(null);
+                setTrainingDaysError(null);
+                setProgressLoading(false);
+                setTrainingDaysLoading(false);
                 return;
             }
 
@@ -91,7 +105,7 @@ const Dashboard = () => {
                     <Card className="p-4 shadow-sm border-0 bg-white text-dark">
                         <Card.Header className="bg-white border-0 pb-0 text-center">
                             <h1 className="text-dark fw-bold mb-0">
-                                Bienvenido al Dashboard, {user?.first_name || 'Cliente'}!
+                                Bienvenido al Dashboard, {user?.firstName || user?.first_name || 'Cliente'}!
                             </h1>
                         </Card.Header>
                         <Card.Body className="pt-3 text-center">
@@ -108,6 +122,16 @@ const Dashboard = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {useMockDashboardData && (
+                <Row className="justify-content-center mb-4">
+                    <Col md={10}>
+                        <Alert variant="info" className="mb-0">
+                            Estás viendo datos ficticios de demostración. No se guardan en tu cuenta.
+                        </Alert>
+                    </Col>
+                </Row>
+            )}
 
             <Row className="justify-content-center g-4">
                 <Col md={10} lg={7}>
