@@ -40,21 +40,22 @@ migrate = Migrate(app, db) # Inicializa Flask-Migrate para manejar migraciones d
 with app.app_context():
     db.create_all()
 
+def _identity_to_user_id(identity):
+    if isinstance(identity, dict):
+        identity = identity.get('id')
+    if isinstance(identity, bool) or not isinstance(identity, (str, int)):
+        return None
+    try:
+        return int(identity)
+    except ValueError:
+        return None
+
+
 # Este decorador le dice a Flask-JWT-Extended cómo encontrar un usuario
 # dado el 'identity' que se guardó en el token (en este caso, el 'id' del usuario)
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
-    identity = jwt_data["sub"] # 'sub' es la clave por defecto para la identidad
-    
-    # Si el identity es un diccionario, obtenemos el id del usuario
-    if isinstance(identity, dict):
-        if 'id' not in identity:
-            return None
-        user_id = identity['id']
-    # Si el identity es un entero, es el id del usuario
-    else:
-        user_id = identity
-
+    user_id = _identity_to_user_id(jwt_data.get("sub"))
     if user_id is None:
         return None
 
@@ -149,7 +150,7 @@ def login_user():
 
     # Si las credenciales son correctas
     # Crear un token de acceso para el usuario autenticado
-    access_token = create_access_token(identity={'id': user.id})
+    access_token = create_access_token(identity=str(user.id))
     
     # Devuelve el token y los datos del usuario (sin la contraseña)
     return jsonify({
@@ -162,8 +163,8 @@ def login_user():
 @app.route('/api/protected', methods=['GET'])
 @jwt_required() # <-- Decorador que protege la ruta
 def protected_route():
-    # Accede a la identidad del usuario actual con get_jwt_identity
-    current_user = get_jwt_identity() # Esto ahora devolverá el objeto User si user_lookup_loader funciona
+    user_id = _identity_to_user_id(get_jwt_identity())
+    current_user = db.session.get(User, user_id) if user_id is not None else None
 
     if current_user:
         return jsonify(logged_in_as=current_user.email, message="¡Acceso concedido a ruta protegida!"), 200
@@ -173,8 +174,7 @@ def protected_route():
 @app.route('/api/progress', methods=['POST'])
 @jwt_required()
 def add_progress_record():
-    current_user_identity = get_jwt_identity()
-    user_id = current_user_identity.get('id') if isinstance(current_user_identity, dict) else current_user_identity
+    user_id = _identity_to_user_id(get_jwt_identity())
     
     if not user_id:
         return jsonify({'message': 'No se pudo obtener la identidad del usuario del token.'}), 401
@@ -221,8 +221,7 @@ def add_progress_record():
 @app.route('/api/progress/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_progress_records(user_id):
-    current_user_identity = get_jwt_identity()
-    auth_user_id = current_user_identity.get('id') if isinstance(current_user_identity, dict) else current_user_identity
+    auth_user_id = _identity_to_user_id(get_jwt_identity())
 
     # Autorización: Solo el propio usuario puede ver sus registros (o un admin si lo implementas)
     if auth_user_id != user_id:
@@ -238,8 +237,7 @@ def get_progress_records(user_id):
 @app.route('/api/training-day', methods=['POST'])
 @jwt_required()
 def add_training_day():
-    current_user_identity = get_jwt_identity()
-    user_id = current_user_identity.get('id') if isinstance(current_user_identity, dict) else current_user_identity
+    user_id = _identity_to_user_id(get_jwt_identity())
 
     if not user_id:
         return jsonify({'message': 'No se pudo obtener la identidad del usuario del token.'}), 401
@@ -283,8 +281,7 @@ def add_training_day():
 @app.route('/api/training-days/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_training_days(user_id):
-    current_user_identity = get_jwt_identity()
-    auth_user_id = current_user_identity.get('id') if isinstance(current_user_identity, dict) else current_user_identity
+    auth_user_id = _identity_to_user_id(get_jwt_identity())
 
     # Autorización: Solo el propio usuario puede ver sus registros
     if auth_user_id != user_id:
