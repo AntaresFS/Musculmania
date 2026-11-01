@@ -31,10 +31,16 @@ migrate = Migrate(app, db) # Inicializa Flask-Migrate para manejar migraciones d
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"] # 'sub' es la clave por defecto para la identidad
-    # Si guardas solo el ID del usuario en el token:
-    user_id = identity.get('id') if isinstance(identity, dict) and 'id' in identity else identity
-    return User.query.get(user_id) # Busca el usuario por su ID
+    
+    # Si el identity es un diccionario, obtenemos el id del usuario
+    if isinstance(identity, dict):
+        user_id = identity.get('id')
+    # Si el identity es un entero, es el id del usuario
+    else:
+        user_id = identity
 
+    # Buscamos el usuario en la base de datos y lo devolvemos
+    return db.session.get(User, user_id)
 
 # --- Rutas de la API ---
 @app.route('/')

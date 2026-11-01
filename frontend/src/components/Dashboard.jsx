@@ -9,7 +9,7 @@ import ProgressChart from '../components/dashboard/ProgressChart.jsx';
 import TrainingCalendar from '../components/dashboard/TrainingCalendar.jsx';
 
 const Dashboard = () => {
-    const { user, logout } = useAuth(); // Obtenemos el usuario y la función de logout del contexto
+    const { user, logout, isLoading } = useAuth(); // Obtenemos el usuario y la función de logout del contexto
 
     // Estados para los datos de progreso
     const [progressData, setProgressData] = useState([]);
@@ -24,6 +24,10 @@ const Dashboard = () => {
     // useEffect para cargar los datos del dashboard
     useEffect(() => {
         const fetchDashboardData = async () => {
+            
+            // Si está cargando, no hacemos nada
+            if (isLoading) return;
+
             if (!user || !user.id) {
                 // Si no hay usuario o ID, no podemos cargar datos específicos
                 setProgressLoading(false);
@@ -69,7 +73,16 @@ const Dashboard = () => {
         };
 
         fetchDashboardData();
-    }, [user, logout]); // Dependencias: user para el ID, logout para la función de cierre de sesión
+    }, [user, logout, isLoading]); // Dependencias: user para el ID, logout para la función de cierre de sesión, isLoading para evitar hacer peticiones si está cargando
+
+    // Si está cargando, mostramos un spinner
+    if (isLoading) {
+        return (
+            <Container className="d-flex justify-content-center align-items-center min-vh-100">
+                <Spinner animation="border" variant="dark" />
+            </Container>
+        );
+    }
 
     return (
         <Container className="py-5 bg-light min-vh-100"> {/* bg-light para fondo, min-vh-100 para altura */}
