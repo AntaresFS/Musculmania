@@ -30,6 +30,11 @@ class User(db.Model):
     level = db.Column(db.String(50), nullable=False) # principiante, intermedio, avanzado
     allergies = db.Column(db.Text, nullable=True) # Puede ser un campo de texto largo
     diet_preferences = db.Column(db.Text, nullable=True) # Puede ser un campo de texto largo
+    role = db.Column(db.String(20), nullable=False, default='user', server_default='user') # Rol del usuario, por defecto 'user'
+
+    __table_args__ = (
+        db.CheckConstraint("role IN ('user', 'trainer', 'admin')", name="ck_user_role"),  # Asegura que el rol sea uno de los valores permitidos
+    )
 
     # Relación con ProgressTracking
     progress_records = db.relationship('ProgressTracking', backref='user', lazy=True, cascade="all, delete-orphan")
@@ -59,7 +64,8 @@ class User(db.Model):
             "address": self.address,
             "level": self.level,
             "allergies": self.allergies,
-            "dietPreferences": self.diet_preferences
+            "dietPreferences": self.diet_preferences,
+            "role": self.role
         }
     
     # --- Nuevo modelo para el seguimiento de progreso ---

@@ -15,7 +15,8 @@ load_dotenv(_ROOT / '.env')
 from backend.models import db, Project, User, ProgressTracking, TrainingDay # Importa el modelo User
 from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
 from flask_migrate import Migrate # Importa Flask-Migrate 
-from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
+from functools import wraps # Importa wraps para crear decoradores personalizados
+from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity, get_current_user
 from datetime import datetime
 
 app = Flask(__name__)
@@ -36,9 +37,6 @@ db.init_app(app)
 
 migrate = Migrate(app, db) # Inicializa Flask-Migrate para manejar migraciones de base de datos
 
-# Fallback so tables exist when the app starts (flask run / python -m) even if migrations have not been applied.
-with app.app_context():
-    db.create_all()
 
 def _identity_to_user_id(identity):
     if isinstance(identity, dict):
@@ -61,6 +59,25 @@ def user_lookup_callback(_jwt_header, jwt_data):
 
     # Buscamos el usuario en la base de datos y lo devolvemos
     return db.session.get(User, user_id)
+
+
+def roles_required(*allowed_roles):
+    def decorator(view):
+        @wraps(view)
+        @jwt_required()
+        def wrapped(*args, **kwargs):
+            user = get_current_user()
+
+            if user is None:
+                return jsonify({"message": "Usuario no encontrado."}), 401
+            if user.role not in allowed_roles:
+                return jsonify({"message": "Acceso denegado. Rol insuficiente."}), 403
+
+            return view(*args, **kwargs)
+        
+        return wrapped
+    return decorator
+
 
 # --- Rutas de la API ---
 @app.route('/')
@@ -103,7 +120,8 @@ def register_user():
             address=data['address'],
             level=data['level'],
             allergies=data.get('allergies'),
-            diet_preferences=data.get('dietPrefs')
+            diet_preferences=data.get('dietPrefs'),
+            role="user"  # Por defecto, todos los usuarios registrados son 'user'
         )
 
         # Hashear y establecer la contraseña
