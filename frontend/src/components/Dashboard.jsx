@@ -1,35 +1,39 @@
-// frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Alert, Button, Spinner } from 'react-bootstrap';
-import apiClient from '../api/axiosConfig'; // Tu instancia de Axios configurada
-import { useAuth } from '../context/AuthContext.jsx'; // Para acceder a los datos del usuario
-
-// Importa los nuevos componentes del dashboard
-import ProgressChart from '../components/dashboard/ProgressChart.jsx';
-import TrainingCalendar from '../components/dashboard/TrainingCalendar.jsx';
+import { Alert, Button, Card, Col, Container, Row, Spinner } from 'react-bootstrap';
+import apiClient from '../api/axiosConfig';
+import { useAuth } from '../context/AuthContext.jsx';
+import ProgressChart from './dashboard/ProgressChart.jsx';
+import TrainingCalendar from './dashboard/TrainingCalendar.jsx';
 import { getMockDashboardData } from '../data/mockDashboardData.js';
 import TrainerDashboard from './TrainerDashboard.jsx';
+import './Dashboard.css';
 
 const useMockDashboardData = import.meta.env.VITE_USE_MOCK_DASHBOARD_DATA === 'true';
 
-const Dashboard = () => {
-    const { user, logout, isLoading } = useAuth(); // Obtenemos el usuario y la función de logout del contexto
+const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
-    // Estados para los datos de progreso
+const getErrorMessage = (error) =>
+    error.response?.data?.message || 'No se pudo registrar el entrenamiento. Inténtalo de nuevo.';
+
+const Dashboard = () => {
+    const { user, logout, isLoading } = useAuth();
     const [progressData, setProgressData] = useState([]);
     const [progressLoading, setProgressLoading] = useState(true);
     const [progressError, setProgressError] = useState(null);
-
-    // Estados para los datos del calendario de entrenamiento
     const [trainingDaysData, setTrainingDaysData] = useState([]);
     const [trainingDaysLoading, setTrainingDaysLoading] = useState(true);
     const [trainingDaysError, setTrainingDaysError] = useState(null);
+    const [trainingActionError, setTrainingActionError] = useState('');
+    const [savingTrainingDate, setSavingTrainingDate] = useState('');
+    const [activeSection, setActiveSection] = useState('overview');
 
-    // useEffect para cargar los datos del dashboard
     useEffect(() => {
         const fetchDashboardData = async () => {
-            
-            // Si está cargando, no hacemos nada
             if (isLoading) return;
 
             if (user?.role === 'trainer' || user?.role === 'admin') {
@@ -38,12 +42,11 @@ const Dashboard = () => {
                 return;
             }
 
-            if (!user || !user.id) {
-                // Si no hay usuario o ID, no podemos cargar datos específicos
+            if (!user?.id) {
                 setProgressLoading(false);
                 setTrainingDaysLoading(false);
-                setProgressError("No se pudo obtener el ID de usuario para cargar los datos.");
-                setTrainingDaysError("No se pudo obtener el ID de usuario para cargar los datos.");
+                setProgressError('No se pudo obtener el ID de usuario para cargar los datos.');
+                setTrainingDaysError('No se pudo obtener el ID de usuario para cargar los datos.');
                 return;
             }
 
@@ -58,35 +61,33 @@ const Dashboard = () => {
                 return;
             }
 
-            // Fetch Progress Data
             try {
                 const progressResponse = await apiClient.get(`/api/progress/${user.id}`);
                 setProgressData(progressResponse.data);
-                setProgressError(null); // Limpiar cualquier error previo
-            } catch (err) {
-                console.error("Error al obtener datos de progreso:", err);
-                if (err.response && err.response.status === 401) {
-                    setProgressError("No autorizado. Tu sesión ha expirado.");
-                    logout(); // Cierra la sesión si el token no es válido
+                setProgressError(null);
+            } catch (error) {
+                console.error('Error al obtener datos de progreso:', error);
+                if (error.response?.status === 401) {
+                    setProgressError('No autorizado. Tu sesión ha expirado.');
+                    logout();
                 } else {
-                    setProgressError("Error al cargar los datos de progreso.");
+                    setProgressError('Error al cargar los datos de progreso.');
                 }
             } finally {
                 setProgressLoading(false);
             }
 
-            // Fetch Training Days Data
             try {
                 const trainingDaysResponse = await apiClient.get(`/api/training-days/${user.id}`);
                 setTrainingDaysData(trainingDaysResponse.data);
-                setTrainingDaysError(null); // Limpiar cualquier error previo
-            } catch (err) {
-                console.error("Error al obtener días de entrenamiento:", err);
-                if (err.response && err.response.status === 401) {
-                    setTrainingDaysError("No autorizado. Tu sesión ha expirado.");
-                    logout(); // Cierra la sesión si el token no es válido
+                setTrainingDaysError(null);
+            } catch (error) {
+                console.error('Error al obtener días de entrenamiento:', error);
+                if (error.response?.status === 401) {
+                    setTrainingDaysError('No autorizado. Tu sesión ha expirado.');
+                    logout();
                 } else {
-                    setTrainingDaysError("Error al cargar los días de entrenamiento.");
+                    setTrainingDaysError('Error al cargar los días de entrenamiento.');
                 }
             } finally {
                 setTrainingDaysLoading(false);
@@ -94,9 +95,81 @@ const Dashboard = () => {
         };
 
         fetchDashboardData();
-    }, [user, logout, isLoading]); // Dependencias: user para el ID, logout para la función de cierre de sesión, isLoading para evitar hacer peticiones si está cargando
+    }, [user, logout, isLoading]);
 
-    // Si está cargando, mostramos un spinner
+    const handleRegisterTrainingDay = async (date) => {
+        const trainingDate = formatDate(date);
+        setTrainingActionError('');
+        setSavingTrainingDate(trainingDate);
+
+        if (useMockDashboardData) {
+            setTrainingDaysData((currentDays) => [
+                ...currentDays,
+                { userId: user.id, trainingDate, description: 'Entrenamiento registrado' },
+            ]);
+            setSavingTrainingDate('');
+            return;
+        }
+
+        try {
+            const response = await apiClient.post('/api/training-day', {
+                trainingDate,
+                description: 'Entrenamiento registrado por el cliente',
+            });
+            setTrainingDaysData((currentDays) =>
+                [...currentDays, response.data.trainingDay].sort((a, b) =>
+                    a.trainingDate.localeCompare(b.trainingDate)
+                )
+            );
+        } catch (error) {
+            console.error('Error al registrar día de entrenamiento:', error);
+            if (error.response?.status === 401) {
+                setTrainingActionError('No autorizado. Tu sesión ha expirado.');
+                logout();
+            } else {
+                setTrainingActionError(getErrorMessage(error));
+            }
+        } finally {
+            setSavingTrainingDate('');
+        }
+    };
+
+    const handleRemoveTrainingDay = async (date, trainingDay) => {
+        const trainingDate = formatDate(date);
+        setTrainingActionError('');
+        setSavingTrainingDate(trainingDate);
+
+        if (useMockDashboardData) {
+            setTrainingDaysData((currentDays) =>
+                currentDays.filter((day) => day.trainingDate.slice(0, 10) !== trainingDate)
+            );
+            setSavingTrainingDate('');
+            return;
+        }
+
+        try {
+            await apiClient.delete(`/api/training-day/${trainingDay.id}`);
+            setTrainingDaysData((currentDays) =>
+                currentDays.filter((day) => day.id !== trainingDay.id)
+            );
+        } catch (error) {
+            console.error('Error al desmarcar día de entrenamiento:', error);
+            if (error.response?.status === 401) {
+                setTrainingActionError('No autorizado. Tu sesión ha expirado.');
+                logout();
+            } else {
+                setTrainingActionError(getErrorMessage(error));
+            }
+        } finally {
+            setSavingTrainingDate('');
+        }
+    };
+
+    const focusSection = (section) => {
+        setActiveSection(section);
+        document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     if (isLoading) {
         return (
             <Container className="d-flex justify-content-center align-items-center min-vh-100">
@@ -109,60 +182,131 @@ const Dashboard = () => {
         return <TrainerDashboard />;
     }
 
+    const firstName = user?.firstName || user?.first_name || 'Cliente';
+    const today = new Date();
+    const trainingDaysThisMonth = trainingDaysData.filter((day) => {
+        const [year, month] = day.trainingDate.split('-').map(Number);
+        return year === today.getFullYear() && month === today.getMonth() + 1;
+    }).length;
+
     return (
-        <Container className="py-5 bg-light min-vh-100"> {/* bg-light para fondo, min-vh-100 para altura */}
-            <Row className="justify-content-center mb-4">
-                <Col md={10}>
-                    <Card className="p-4 shadow-sm border-0 bg-white text-dark">
-                        <Card.Header className="bg-white border-0 pb-0 text-center">
-                            <h1 className="text-dark fw-bold mb-0">
-                                Bienvenido al Dashboard, {user?.firstName || user?.first_name || 'Cliente'}!
-                            </h1>
-                        </Card.Header>
-                        <Card.Body className="pt-3 text-center">
-                            <p className="lead text-secondary">
-                                Aquí puedes visualizar tu progreso y gestionar tu camino hacia tus metas.
-                            </p>
-                            <div className="d-grid gap-3 mt-4">
-                                <Button variant="dark" size="lg" className="py-3">Mi Perfil (Próximamente)</Button>
-                                <Button variant="outline-dark" size="lg" className="py-3">Mi Rutina de Entrenamiento (Próximamente)</Button>
-                                <Button variant="outline-dark" size="lg" className="py-3">Mi Dieta Personalizada (Próximamente)</Button>
-                                <Button variant="danger" size="lg" className="py-3" onClick={logout}>Cerrar Sesión</Button>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+        <div className="client-dashboard">
+            <aside className="client-sidebar">
+                <div className="client-workspace-label">TU ESPACIO DE TRABAJO</div>
+                <div className="client-sidebar-title">Musculmania</div>
+                <nav aria-label="Navegación de cliente" className="client-side-nav">
+                    <button
+                        type="button"
+                        className={activeSection === 'overview' ? 'active' : ''}
+                        onClick={() => focusSection('overview')}
+                    >
+                        <span className="client-nav-symbol" aria-hidden="true">⌂</span> Resumen
+                    </button>
+                    <button
+                        type="button"
+                        className={activeSection === 'progress' ? 'active' : ''}
+                        onClick={() => focusSection('progress')}
+                    >
+                        <span className="client-nav-symbol" aria-hidden="true">↗</span> Mi progreso
+                    </button>
+                    <button
+                        type="button"
+                        className={activeSection === 'calendar' ? 'active' : ''}
+                        onClick={() => focusSection('calendar')}
+                    >
+                        <span className="client-nav-symbol" aria-hidden="true">▦</span> Calendario
+                    </button>
+                </nav>
+                <div className="client-sidebar-bottom">
+                    <div className="client-account">
+                        <span className="client-avatar" aria-hidden="true">
+                            {firstName[0]?.toUpperCase()}
+                        </span>
+                        <div>
+                            <strong>{firstName}</strong>
+                            <span>Cliente</span>
+                        </div>
+                    </div>
+                    <button type="button" className="client-logout" onClick={logout}>Cerrar sesión</button>
+                </div>
+            </aside>
 
-            {useMockDashboardData && (
-                <Row className="justify-content-center mb-4">
-                    <Col md={10}>
-                        <Alert variant="info" className="mb-0">
-                            Estás viendo datos ficticios de demostración. No se guardan en tu cuenta.
+            <main className="client-main">
+                <header className="client-topbar">
+                    <div className="client-breadcrumb">
+                        Musculmania <span>/</span> {activeSection === 'progress' ? 'Mi progreso' : activeSection === 'calendar' ? 'Calendario' : 'Resumen'}
+                    </div>
+                    <div className="client-topbar-user"><span className="client-online-dot" /> Panel de cliente</div>
+                </header>
+
+                <div className="client-content">
+                    <section id="overview" className="client-page-heading">
+                        <div>
+                            <div className="client-eyebrow">TU ESPACIO PERSONAL</div>
+                            <h1>¡Hola, {firstName}!</h1>
+                            <p>Revisa tus avances y mantén el seguimiento de tus entrenamientos.</p>
+                        </div>
+                    </section>
+
+                    {useMockDashboardData && (
+                        <Alert variant="info" className="client-demo-alert">
+                            Estás viendo datos de demostración. Los cambios del calendario no se guardan en tu cuenta.
                         </Alert>
-                    </Col>
-                </Row>
-            )}
+                    )}
 
-            <Row className="justify-content-center g-4">
-                <Col md={10} lg={7}>
-                    {/* Componente de la gráfica de progreso */}
-                    <ProgressChart
-                        data={progressData}
-                        loading={progressLoading}
-                        error={progressError}
-                    />
-                </Col>
-                <Col md={10} lg={5}>
-                    {/* Componente del calendario de entrenamiento */}
-                    <TrainingCalendar
-                        data={trainingDaysData}
-                        loading={trainingDaysLoading}
-                        error={trainingDaysError}
-                    />
-                </Col>
-            </Row>
-        </Container>
+                    {trainingDaysError && (
+                        <Alert variant="danger" className="client-dashboard-alert">{trainingDaysError}</Alert>
+                    )}
+
+                    <Row className="g-3 mb-4">
+                        <Col sm={6}>
+                            <Card className="client-stat-card h-100">
+                                <Card.Body>
+                                    <span className="client-stat-label">ENTRENAMIENTOS ESTE MES</span>
+                                    <div className="client-stat-value">
+                                        {trainingDaysLoading ? '—' : trainingDaysThisMonth}
+                                    </div>
+                                    <span className="client-stat-footnote">Días que has marcado en el calendario</span>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col sm={6}>
+                            <Card className="client-highlight-card h-100">
+                                <Card.Body>
+                                    <div>
+                                        <span className="client-stat-label">LA CONSTANCIA CUENTA</span>
+                                        <h2>Cada entrenamiento suma</h2>
+                                    </div>
+                                    <span className="client-highlight-icon" aria-hidden="true">✳</span>
+                                    <p>Registra tus sesiones para ver tu hábito crecer semana a semana.</p>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Row className="g-4 align-items-stretch">
+                        <Col xl={8} id="progress" className="client-dashboard-section">
+                            <ProgressChart
+                                data={progressData}
+                                loading={progressLoading}
+                                error={progressError}
+                            />
+                        </Col>
+                        <Col xl={4} id="calendar" className="client-dashboard-section">
+                            <TrainingCalendar
+                                data={trainingDaysData}
+                                loading={trainingDaysLoading}
+                                error={trainingActionError}
+                                onRegisterTrainingDay={handleRegisterTrainingDay}
+                                onRemoveTrainingDay={handleRemoveTrainingDay}
+                                savingDate={savingTrainingDate}
+                                isDemo={useMockDashboardData}
+                            />
+                        </Col>
+                    </Row>
+                </div>
+            </main>
+        </div>
     );
 };
 

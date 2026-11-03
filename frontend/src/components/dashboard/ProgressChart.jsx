@@ -1,91 +1,193 @@
-// frontend/src/components/dashboard/ProgressChart.jsx
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+    Area,
+    AreaChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
 } from 'recharts';
-import { Card, Spinner, Alert } from 'react-bootstrap';
-import moment from 'moment'; // Importa moment para formatear fechas
+import { Alert, Card, Form, Spinner } from 'react-bootstrap';
+import moment from 'moment';
 
-// Componente ProgressChart que recibe datos, estado de carga y errores como props
+const METRICS = [
+    { key: 'weightKg', label: 'Peso', unit: 'kg' },
+    { key: 'bicepsCm', label: 'Bíceps', unit: 'cm' },
+    { key: 'chestCm', label: 'Pecho', unit: 'cm' },
+    { key: 'waistCm', label: 'Cintura', unit: 'cm' },
+    { key: 'hipsCm', label: 'Caderas', unit: 'cm' },
+    { key: 'thighCm', label: 'Muslos', unit: 'cm' },
+    { key: 'glutesCm', label: 'Glúteos', unit: 'cm' },
+];
+
+const formatValue = (value) =>
+    Number(value).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+
 const ProgressChart = ({ data, loading, error }) => {
-  if (loading) {
-    return (
-      <Card className="p-4 shadow-sm border-0 bg-white text-center">
-        <Spinner animation="border" role="status" className="text-dark">
-          <span className="visually-hidden">Cargando datos de progreso...</span>
-        </Spinner>
-        <p className="text-secondary mt-2">Cargando datos de progreso...</p>
-      </Card>
+    const [selectedMetric, setSelectedMetric] = useState('weightKg');
+    const availableMetrics = useMemo(
+        () => METRICS.filter(({ key }) =>
+            data.some((item) => item[key] !== null && item[key] !== '' && Number.isFinite(Number(item[key])))
+        ),
+        [data]
     );
-  }
 
-  if (error) {
+    useEffect(() => {
+        if (availableMetrics.length > 0 && !availableMetrics.some(({ key }) => key === selectedMetric)) {
+            setSelectedMetric(availableMetrics[0].key);
+        }
+    }, [availableMetrics, selectedMetric]);
+
+    const metric = availableMetrics.find(({ key }) => key === selectedMetric) || availableMetrics[0];
+    const chartData = useMemo(() => {
+        if (!metric) return [];
+        return data
+            .filter((item) => item[metric.key] !== null && item[metric.key] !== '' && Number.isFinite(Number(item[metric.key])))
+            .map((item) => ({
+                timestamp: moment(item.recordDate).valueOf(),
+                value: Number(item[metric.key]),
+            }))
+            .filter((item) => Number.isFinite(item.timestamp))
+            .sort((a, b) => a.timestamp - b.timestamp);
+    }, [data, metric]);
+
+    if (loading) {
+        return (
+            <Card className="progress-chart-card">
+                <Card.Body className="client-loading-state">
+                    <Spinner animation="border" role="status" className="text-success">
+                        <span className="visually-hidden">Cargando datos de progreso...</span>
+                    </Spinner>
+                    <span>Cargando tus avances...</span>
+                </Card.Body>
+            </Card>
+        );
+    }
+
+    if (error) {
+        return (
+            <Card className="progress-chart-card">
+                <Card.Body><Alert variant="danger" className="mb-0">{error}</Alert></Card.Body>
+            </Card>
+        );
+    }
+
+    const firstRecord = chartData[0];
+    const latestRecord = chartData[chartData.length - 1];
+    const totalChange = firstRecord && latestRecord ? latestRecord.value - firstRecord.value : null;
+
     return (
-      <Card className="p-4 shadow-sm border-0 bg-white">
-        <Alert variant="danger" className="mb-0">
-          Error al cargar los datos de progreso: {error}
-        </Alert>
-      </Card>
+        <Card className="progress-chart-card h-100">
+            <Card.Header>
+                <div className="client-eyebrow">SEGUIMIENTO PERSONAL</div>
+                <h2 className="client-panel-title">Tu progreso</h2>
+                <p className="client-panel-description">
+                    Consulta cómo evolucionan tus medidas a lo largo del tiempo.
+                </p>
+            </Card.Header>
+            <Card.Body>
+                {chartData.length === 0 ? (
+                    <div className="client-empty-state">
+                        <span className="client-empty-icon" aria-hidden="true">↗</span>
+                        <p>Aún no hay registros de progreso. Cuando añadas tus medidas, aparecerán aquí.</p>
+                    </div>
+                ) : (
+                    <>
+                        <Form.Group>
+                            <Form.Label className="client-chart-select-label">Medida que quieres consultar</Form.Label>
+                            <Form.Select
+                                className="client-chart-select"
+                                value={metric.key}
+                                onChange={(event) => setSelectedMetric(event.target.value)}
+                                aria-label="Selecciona una medida de progreso"
+                            >
+                                {availableMetrics.map((item) => (
+                                    <option key={item.key} value={item.key}>{item.label} ({item.unit})</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+
+                        <div className="client-progress-chart" role="img" aria-label={`Gráfica de evolución de ${metric.label.toLowerCase()} en ${metric.unit}`}>
+                            <ResponsiveContainer width="100%" height={280}>
+                                <AreaChart data={chartData} margin={{ top: 16, right: 12, left: 2, bottom: 4 }}>
+                                    <defs>
+                                        <linearGradient id="clientProgressFill" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#4c8062" stopOpacity={0.22} />
+                                            <stop offset="95%" stopColor="#4c8062" stopOpacity={0.015} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid vertical={false} stroke="#edf1ed" />
+                                    <XAxis
+                                        dataKey="timestamp"
+                                        type="number"
+                                        scale="time"
+                                        domain={['dataMin', 'dataMax']}
+                                        tickFormatter={(value) => moment(value).locale('es').format('D MMM')}
+                                        tick={{ fill: '#78837c', fontSize: 10 }}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        minTickGap={24}
+                                    />
+                                    <YAxis
+                                        width={48}
+                                        tickFormatter={(value) => formatValue(value)}
+                                        tick={{ fill: '#78837c', fontSize: 10 }}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        domain={['auto', 'auto']}
+                                        label={{
+                                            value: metric.unit,
+                                            angle: -90,
+                                            position: 'insideLeft',
+                                            fill: '#78837c',
+                                            fontSize: 10,
+                                        }}
+                                    />
+                                    <Tooltip
+                                        labelFormatter={(value) => moment(value).locale('es').format('D MMMM YYYY')}
+                                        formatter={(value) => [`${formatValue(value)} ${metric.unit}`, metric.label]}
+                                        contentStyle={{
+                                            border: '1px solid #e3e9e4',
+                                            borderRadius: 9,
+                                            boxShadow: '0 5px 16px rgba(27, 46, 36, .08)',
+                                            fontSize: 12,
+                                        }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="value"
+                                        name={metric.label}
+                                        stroke="#397153"
+                                        strokeWidth={2.5}
+                                        fill="url(#clientProgressFill)"
+                                        activeDot={{ r: 5, fill: '#315d4a', stroke: '#fff', strokeWidth: 2 }}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        <div className="client-chart-summary">
+                            <div>
+                                <span>Último registro</span>
+                                <strong>{formatValue(latestRecord.value)} {metric.unit}</strong>
+                            </div>
+                            {chartData.length > 1 && (
+                                <div>
+                                    <span>Variación desde el primer registro</span>
+                                    <strong>{totalChange > 0 ? '+' : ''}{formatValue(totalChange)} {metric.unit}</strong>
+                                </div>
+                            )}
+                            <div>
+                                <span>Fecha más reciente</span>
+                                <strong>{moment(latestRecord.timestamp).locale('es').format('D MMM YYYY')}</strong>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </Card.Body>
+        </Card>
     );
-  }
-
-  const hasData = data && data.length > 0;
-
-  // Formatear las fechas para el eje X
-  const formattedData = data.map(item => ({
-    ...item,
-    recordDate: moment(item.recordDate).format('DD/MM/YY') // Formato más legible
-  }));
-
-  // Colores consistentes con la paleta sobria
-  const colors = {
-    weight: '#343a40', // Negro/Gris oscuro
-    biceps: '#6c757d', // Gris medio
-    chest: '#adb5bd',  // Gris claro
-    waist: '#495057',  // Gris oscuro ligeramente diferente
-    hips: '#868e96',   // Otro gris
-    thigh: '#ced4da',  // Gris muy claro
-    glutes: '#212529'  // Negro más puro
-  };
-
-  return (
-    <Card className="p-4 shadow-sm border-0 bg-white text-dark h-100">
-      <Card.Header className="bg-white border-0 pb-0">
-        <h3 className="text-dark fw-bold mb-0">Evolución de Peso y Medidas</h3>
-      </Card.Header>
-      <Card.Body className="pt-3 d-flex flex-column justify-content-center align-items-center">
-        {!hasData ? (
-          <p className="text-secondary text-center">No hay datos de progreso disponibles aún. ¡Registra tu primer avance!</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart
-              data={formattedData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" /> {/* Cuadrícula sutil */}
-              <XAxis dataKey="recordDate" stroke="#6c757d" />
-              <YAxis stroke="#6c757d" />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#fff', border: '1px solid #ced4da', borderRadius: '0.25rem' }}
-                labelStyle={{ color: '#212529', fontWeight: 'bold' }}
-                itemStyle={{ color: '#495057' }}
-              />
-              <Legend wrapperStyle={{ paddingTop: '20px' }} />
-
-              {/* Líneas para cada métrica */}
-              {formattedData.some(item => item.weightKg !== null) && <Line type="monotone" dataKey="weightKg" stroke={colors.weight} name="Peso (kg)" activeDot={{ r: 8 }} />}
-              {formattedData.some(item => item.bicepsCm !== null) && <Line type="monotone" dataKey="bicepsCm" stroke={colors.biceps} name="Bíceps (cm)" activeDot={{ r: 8 }} />}
-              {formattedData.some(item => item.chestCm !== null) && <Line type="monotone" dataKey="chestCm" stroke={colors.chest} name="Pecho (cm)" activeDot={{ r: 8 }} />}
-              {formattedData.some(item => item.waistCm !== null) && <Line type="monotone" dataKey="waistCm" stroke={colors.waist} name="Cintura (cm)" activeDot={{ r: 8 }} />}
-              {formattedData.some(item => item.hipsCm !== null) && <Line type="monotone" dataKey="hipsCm" stroke={colors.hips} name="Caderas (cm)" activeDot={{ r: 8 }} />}
-              {formattedData.some(item => item.thighCm !== null) && <Line type="monotone" dataKey="thighCm" stroke={colors.thigh} name="Muslos (cm)" activeDot={{ r: 8 }} />}
-              {formattedData.some(item => item.glutesCm !== null) && <Line type="monotone" dataKey="glutesCm" stroke={colors.glutes} name="Glúteos (cm)" activeDot={{ r: 8 }} />}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </Card.Body>
-    </Card>
-  );
 };
 
 export default ProgressChart;

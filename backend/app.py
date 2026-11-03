@@ -13,7 +13,7 @@ if str(_ROOT) not in sys.path:
 load_dotenv(_ROOT / '.env')
 
 from backend.models import db, Project, User, ProgressTracking, TrainingDay # Importa el modelo User
-from sqlalchemy.exc import IntegrityError # Importa IntegrityError para manejar errores de BD
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError # Importa errores de BD
 from flask_migrate import Migrate # Importa Flask-Migrate 
 from functools import wraps # Importa wraps para crear decoradores personalizados
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity, get_current_user
@@ -426,6 +426,25 @@ def add_training_day():
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': f'Error al registrar día de entrenamiento: {str(e)}'}), 500
+
+@app.route('/api/training-day/<int:training_day_id>', methods=['DELETE'])
+@jwt_required()
+def delete_training_day(training_day_id):
+    user_id = _identity_to_user_id(get_jwt_identity())
+
+    try:
+        training_day = db.session.get(TrainingDay, training_day_id)
+        if training_day is None:
+            return jsonify({'message': 'No se encontró el día de entrenamiento solicitado.'}), 404
+        if training_day.user_id != user_id:
+            return jsonify({'message': 'No tienes permiso para modificar este día de entrenamiento.'}), 403
+
+        db.session.delete(training_day)
+        db.session.commit()
+        return jsonify({'message': 'Día de entrenamiento eliminado correctamente.'}), 200
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({'message': 'No se pudo eliminar el día de entrenamiento.'}), 500
 
 ### **Endpoint para Obtener Días de Entrenamiento de un Cliente**
 @app.route('/api/training-days/<int:user_id>', methods=['GET'])

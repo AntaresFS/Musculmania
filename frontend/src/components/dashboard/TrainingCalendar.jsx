@@ -1,69 +1,104 @@
-// frontend/src/components/dashboard/TrainingCalendar.jsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css'; // Estilos por defecto del calendario
-import { Card, Spinner, Alert } from 'react-bootstrap';
-import moment from 'moment'; // Importa moment
-
-// Sobrescribe algunos estilos de react-calendar para que coincidan con tu tema
+import 'react-calendar/dist/Calendar.css';
+import { Alert, Card, Spinner } from 'react-bootstrap';
 import './TrainingCalendar.css';
 
-const TrainingCalendar = ({ data, loading, error }) => {
-  if (loading) {
-    return (
-      <Card className="p-4 shadow-sm border-0 bg-white text-center">
-        <Spinner animation="border" role="status" className="text-dark">
-          <span className="visually-hidden">Cargando calendario...</span>
-        </Spinner>
-        <p className="text-secondary mt-2">Cargando calendario de entrenamientos...</p>
-      </Card>
+const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const TrainingCalendar = ({
+    data,
+    loading,
+    error,
+    onRegisterTrainingDay,
+    onRemoveTrainingDay,
+    savingDate,
+    isDemo,
+}) => {
+    const trainingDates = useMemo(
+        () => new Set(data.map((day) => day.trainingDate.slice(0, 10))),
+        [data]
     );
-  }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const handleDayClick = (date) => {
+        const trainingDate = formatDate(date);
+        const trainingDay = data.find((day) => day.trainingDate.slice(0, 10) === trainingDate);
 
-  if (error) {
-    return (
-      <Card className="p-4 shadow-sm border-0 bg-white">
-        <Alert variant="danger" className="mb-0">
-          Error al cargar el calendario: {error}
-        </Alert>
-      </Card>
-    );
-  }
+        if (trainingDay) {
+            onRemoveTrainingDay(date, trainingDay);
+        } else {
+            onRegisterTrainingDay(date);
+        }
+    };
 
-  const hasData = data && data.length > 0;
-
-  // Convertir las fechas de entrenamiento a objetos Date para el calendario
-  const trainingDates = hasData ? data.map(day => moment(day.trainingDate).toDate()) : [];
-
-  // Función para marcar los días de entrenamiento
-  const tileClassName = ({ date, view }) => {
-    if (view === 'month') {
-      // Comprueba si la fecha del calendario coincide con alguna fecha de entrenamiento
-      if (trainingDates.some(trainingDate => moment(trainingDate).isSame(date, 'day'))) {
-        return 'training-day'; // Clase CSS para los días de entrenamiento
-      }
+    if (loading) {
+        return (
+            <Card className="training-calendar-card">
+                <Card.Body className="client-loading-state">
+                    <Spinner animation="border" role="status" className="text-success">
+                        <span className="visually-hidden">Cargando calendario...</span>
+                    </Spinner>
+                    <span>Cargando tu calendario...</span>
+                </Card.Body>
+            </Card>
+        );
     }
-    return null;
-  };
 
-  return (
-    <Card className="p-4 shadow-sm border-0 bg-white text-dark h-100">
-      <Card.Header className="bg-white border-0 pb-0">
-        <h3 className="text-dark fw-bold mb-0">Calendario de Entrenamientos</h3>
-      </Card.Header>
-      <Card.Body className="pt-3 d-flex flex-column justify-content-center align-items-center">
-        <Calendar
-          tileClassName={tileClassName}
-          value={new Date()} // Inicia el calendario en el mes actual
-          locale="es-ES" // Establece el idioma a español
-          className="custom-calendar" // Clase para estilos personalizados
-        />
-        {!hasData && (
-          <p className="text-secondary text-center mt-3">No hay días de entrenamiento registrados aún. ¡Empieza a entrenar!</p>
-        )}
-      </Card.Body>
-    </Card>
-  );
+    return (
+        <Card className="training-calendar-card h-100">
+            <Card.Header>
+                <div className="client-eyebrow">TU CONSTANCIA</div>
+                <h2 className="client-panel-title">Calendario de entrenamientos</h2>
+                <p className="client-panel-description">Selecciona un día para marcar cuándo entrenaste.</p>
+            </Card.Header>
+            <Card.Body>
+                {error && <Alert variant="danger" className="client-action-error">{error}</Alert>}
+                <Calendar
+                    className="client-calendar"
+                    locale="es-ES"
+                    maxDate={today}
+                    onClickDay={handleDayClick}
+                    tileDisabled={({ date, view }) =>
+                        view === 'month' && (
+                            date > today ||
+                            Boolean(savingDate)
+                        )
+                    }
+                    tileClassName={({ date, view }) =>
+                        view === 'month' && trainingDates.has(formatDate(date))
+                            ? 'client-training-day'
+                            : null
+                    }
+                    tileContent={({ date, view }) =>
+                        view === 'month' && trainingDates.has(formatDate(date))
+                            ? <span className="visually-hidden">Entrenamiento registrado. Haz clic para desmarcarlo.</span>
+                            : null
+                    }
+                />
+                <div className="client-calendar-legend">
+                    <span className="client-calendar-legend-dot" aria-hidden="true" />
+                    Día entrenado
+                </div>
+                {savingDate && (
+                    <div className="client-registering" role="status">
+                        <Spinner animation="border" size="sm" />
+                        {isDemo ? 'Actualizando calendario…' : 'Guardando entrenamiento…'}
+                    </div>
+                )}
+                <p className="client-calendar-help">
+                    {isDemo
+                        ? 'Selecciona una fecha pasada o de hoy para marcarla; vuelve a pulsarla para desmarcarla. Los cambios de demostración no se guardan en tu cuenta.'
+                        : 'Selecciona una fecha pasada o de hoy para marcar tu entrenamiento. Si te equivocaste, vuelve a pulsar ese día para desmarcarlo.'}
+                </p>
+            </Card.Body>
+        </Card>
+    );
 };
 
 export default TrainingCalendar;
