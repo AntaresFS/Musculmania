@@ -64,15 +64,21 @@ const AppNavbar = ({ onShowAuthModal }) => {
                         {isAuthenticated ? (
                             // Menú desplegable para usuarios autenticados
                             <NavDropdown 
-                                title={`Hola, ${user?.first_name || 'Cliente'}`} 
+                                title={`Hola, ${user?.firstName || user?.first_name || 'Cliente'}`}
                                 id="basic-nav-dropdown" 
                                 align="end" // Alinea el menú a la derecha
                                 className="text-white mx-2"
                             >
-                                <NavDropdown.Item onClick={handleDashboardRedirect}>Dashboard</NavDropdown.Item>
-                                <NavDropdown.Item onClick={handleProfileRedirect}>Mi Perfil</NavDropdown.Item>
-                                <NavDropdown.Item onClick={handleRoutineRedirect}>Rutina de Entrenamiento</NavDropdown.Item>
-                                <NavDropdown.Item onClick={handleDietRedirect}>Dieta Personalizada</NavDropdown.Item>
+                                <NavDropdown.Item onClick={handleDashboardRedirect}>
+                                    {user?.role === 'trainer' || user?.role === 'admin' ? 'Panel de trainer' : 'Dashboard'}
+                                </NavDropdown.Item>
+                                {user?.role !== 'trainer' && user?.role !== 'admin' && (
+                                    <>
+                                        <NavDropdown.Item onClick={handleProfileRedirect}>Mi Perfil</NavDropdown.Item>
+                                        <NavDropdown.Item onClick={handleRoutineRedirect}>Rutina de Entrenamiento</NavDropdown.Item>
+                                        <NavDropdown.Item onClick={handleDietRedirect}>Dieta Personalizada</NavDropdown.Item>
+                                    </>
+                                )}
                                 <NavDropdown.Divider />
                                 <NavDropdown.Item onClick={handleLogout}>Cerrar Sesión</NavDropdown.Item>
                             </NavDropdown>

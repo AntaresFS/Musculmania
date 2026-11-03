@@ -177,6 +177,138 @@ def login_user():
         'user': user.to_dict() # Devuelve los datos del usuario (sin la contraseña)
     }), 200 # 200 OK
 
+@app.route('/api/trainer/users', methods=['GET'])
+@roles_required('trainer', 'admin')
+def get_trainer_users():
+    users = User.query.filter_by(role='user').order_by(User.first_name, User.last_name).all()
+    return jsonify([user.to_dict() for user in users]), 200
+
+
+@app.route('/api/trainer/users', methods=['POST'])
+@roles_required('trainer', 'admin')
+def create_trainer_user():
+    data = request.get_json()
+    required_fields = ('firstName', 'lastName', 'gender', 'email', 'address', 'level', 'password')
+    if not isinstance(data, dict):
+        return jsonify({'message': 'Los datos del usuario deben enviarse como un objeto.'}), 400
+
+    for field in required_fields:
+        if not isinstance(data.get(field), str) or not data[field].strip():
+            return jsonify({'message': f'El campo {field} es obligatorio.'}), 400
+
+    optional_fields = ('phone', 'allergies', 'dietPrefs')
+    for field in optional_fields:
+        if data.get(field) is not None and not isinstance(data[field], str):
+            return jsonify({'message': f'El campo {field} debe ser texto.'}), 400
+
+    max_lengths = {
+        'firstName': 100,
+        'lastName': 100,
+        'email': 120,
+        'phone': 20,
+        'address': 255,
+        'level': 50,
+    }
+    for field, max_length in max_lengths.items():
+        if len(data[field].strip()) > max_length:
+            return jsonify({'message': f'El campo {field} no puede superar {max_length} caracteres.'}), 400
+    if len(data['password']) < 8 or len(data['password']) > 128:
+        return jsonify({'message': 'La contraseña debe tener entre 8 y 128 caracteres.'}), 400
+
+    email = data['email'].strip().lower()
+    if '@' not in email:
+        return jsonify({'message': 'El correo electrónico no es válido.'}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({'message': 'El correo electrónico ya está registrado.'}), 409
+    if data['gender'] not in ('male', 'female', 'other'):
+        return jsonify({'message': 'El género seleccionado no es válido.'}), 400
+    if data['level'] not in ('principiante', 'intermedio', 'avanzado'):
+        return jsonify({'message': 'El nivel seleccionado no es válido.'}), 400
+
+    new_user = User(
+        first_name=data['firstName'].strip(),
+        last_name=data['lastName'].strip(),
+        gender=data['gender'],
+        email=email,
+        phone=(data.get('phone') or '').strip() or None,
+        address=data['address'].strip(),
+        level=data['level'],
+        allergies=(data.get('allergies') or '').strip() or None,
+        diet_preferences=(data.get('dietPrefs') or '').strip() or None,
+        role='user'
+    )
+    new_user.set_password(data['password'])
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'user': new_user.to_dict()}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'El correo electrónico ya está registrado.'}), 409
+
+
+@app.route('/api/trainer/users/<int:user_id>', methods=['PATCH'])
+@roles_required('trainer', 'admin')
+def update_trainer_user(user_id):
+    user = User.query.filter_by(id=user_id, role='user').first()
+    if user is None:
+        return jsonify({'message': 'No se encontró el cliente solicitado.'}), 404
+
+    data = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({'message': 'Los datos del usuario deben enviarse como un objeto.'}), 400
+
+    field_map = {
+        'firstName': ('first_name', True),
+        'lastName': ('last_name', True),
+        'gender': ('gender', True),
+        'email': ('email', True),
+        'phone': ('phone', False),
+        'address': ('address', True),
+        'level': ('level', True),
+        'allergies': ('allergies', False),
+        'dietPrefs': ('diet_preferences', False),
+    }
+    max_lengths = {
+        'firstName': 100,
+        'lastName': 100,
+        'email': 120,
+        'phone': 20,
+        'address': 255,
+        'level': 50,
+    }
+    for field, (attribute, required) in field_map.items():
+        if field not in data:
+            continue
+        value = data[field]
+        if value is not None and not isinstance(value, str):
+            return jsonify({'message': f'El campo {field} debe ser texto.'}), 400
+        value = value.strip() if value is not None else ''
+        if required and not value:
+            return jsonify({'message': f'El campo {field} es obligatorio.'}), 400
+        if field in max_lengths and len(value) > max_lengths[field]:
+            return jsonify({'message': f'El campo {field} no puede superar {max_lengths[field]} caracteres.'}), 400
+        if field == 'gender' and value not in ('male', 'female', 'other'):
+            return jsonify({'message': 'El género seleccionado no es válido.'}), 400
+        if field == 'level' and value not in ('principiante', 'intermedio', 'avanzado'):
+            return jsonify({'message': 'El nivel seleccionado no es válido.'}), 400
+        if field == 'email':
+            value = value.lower()
+            if '@' not in value:
+                return jsonify({'message': 'El correo electrónico no es válido.'}), 400
+            existing_user = User.query.filter(User.email == value, User.id != user.id).first()
+            if existing_user:
+                return jsonify({'message': 'El correo electrónico ya está registrado.'}), 409
+        setattr(user, attribute, value if required or value else None)
+
+    try:
+        db.session.commit()
+        return jsonify({'user': user.to_dict()}), 200
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'El correo electrónico ya está registrado.'}), 409
+
+
 # --- Ejemplo de ruta protegida ---
 @app.route('/api/protected', methods=['GET'])
 @jwt_required() # <-- Decorador que protege la ruta

@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext.jsx'; // Para acceder a los dato
 import ProgressChart from '../components/dashboard/ProgressChart.jsx';
 import TrainingCalendar from '../components/dashboard/TrainingCalendar.jsx';
 import { getMockDashboardData } from '../data/mockDashboardData.js';
+import TrainerDashboard from './TrainerDashboard.jsx';
 
 const useMockDashboardData = import.meta.env.VITE_USE_MOCK_DASHBOARD_DATA === 'true';
 
@@ -30,6 +31,12 @@ const Dashboard = () => {
             
             // Si está cargando, no hacemos nada
             if (isLoading) return;
+
+            if (user?.role === 'trainer' || user?.role === 'admin') {
+                setProgressLoading(false);
+                setTrainingDaysLoading(false);
+                return;
+            }
 
             if (!user || !user.id) {
                 // Si no hay usuario o ID, no podemos cargar datos específicos
@@ -96,6 +103,10 @@ const Dashboard = () => {
                 <Spinner animation="border" variant="dark" />
             </Container>
         );
+    }
+
+    if (user?.role === 'trainer' || user?.role === 'admin') {
+        return <TrainerDashboard />;
     }
 
     return (
